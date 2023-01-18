@@ -21,6 +21,10 @@ grm = function(Y,
                space.is, 
                time.id, 
                spacetime.id,
+               include.additive.weekly.resid = T,
+               include.additive.annual.resid = T,
+               include.multiplicative.weekly.resid = T,
+               include.mutliplicative.annual.resid = T,
                t1.a = 0.5, 
                t1.b = 0.005, 
                theta.tune=0.2, 
@@ -224,43 +228,43 @@ grm = function(Y,
     ###Initialize alpha_time and its CAR variance omega_alpha
     alpha_time = rep(0, N.time)
     omega_alpha = 0
-    if (nu$nu_alpha_W == 1){ 
-      alpha_time = (1/GtG_time)*t(Gamma_time)%*%(Y-mu)
-      omega_alpha = as.numeric(var (alpha_time, na.rm = T))
+    if (include.additive.weekly.resid) { 
+      alpha_time = (1 / GtG_time) * t(Gamma_time) %*% (Y - mu)
+      omega_alpha = as.numeric(var(alpha_time, na.rm = T))
     }
     
     ###Initialize beta_time and its CAR variance omega_beta
-    beta_time = rep (0, N.time)
+    beta_time = rep(0, N.time)
     omega_beta = 0
-    if (nu$nu_beta_W == 1){ 
-      RRR = Y-mu-alpha_time[time.id]
-      beta_time=  1/X_W*t(Gamma_time)%*%(X*RRR)
-      omega_beta = as.numeric(var (beta_time, na.rm = T))
+    if (include.multiplicative.weekly.resid) { 
+      RRR = Y - mu - alpha_time[time.id]
+      beta_time=  1 / X_W * t(Gamma_time) %*% (X * RRR)
+      omega_beta = as.numeric(var(beta_time, na.rm = T))
     }
     
     ###Initialize alpha_spacetime and its spatial variance tau_alpha
-    alpha_space = rep(0, N.spacetime*N.space)
+    alpha_space = rep(0, N.spacetime * N.space)
     tau_alpha = 0
-    if (nu$nu_alpha_S == 1){ 
-      RRR = Y-mu-alpha_time[time.id] - beta_time[time.id]*X
-      alpha_space = as.numeric((1/GtG_space)*t(Gamma_space)%*%RRR)
-      tau_alpha = as.numeric(var (alpha_space, na.rm  =T))
+    if (include.additive.annual.resid) {
+      RRR = Y - mu - alpha_time[time.id] - beta_time[time.id] * X
+      alpha_space = as.numeric((1 / GtG_space) * t(Gamma_space) %*% RRR)
+      tau_alpha = as.numeric(var(alpha_space, na.rm = T))
     }
     
     ###Initialize alpha_spacetime and its spatial variance tau_beta
-    beta_space = rep(0, N.spacetime*N.space)
+    beta_space = rep(0, N.spacetime * N.space)
     tau_beta = 0
-    if (nu$nu_beta_S == 1){ 
-      RRR = Y-mu-alpha_time[time.id] - beta_time[time.id]*X - alpha_space[Z_ID]
-      beta_space = as.numeric(1/X_S*t(Gamma_space)%*%(X*RRR))
-      tau_beta = as.numeric(var (beta_space, na.rm  =T))
+    if (include.multiplicative.annual.resid) {
+      RRR = Y - mu - alpha_time[time.id] - beta_time[time.id] * X - alpha_space[Z_ID]
+      beta_space = as.numeric(1 / X_S * t(Gamma_space) %*% (X * RRR))
+      tau_beta = as.numeric(var(beta_space, na.rm = T))
     }
     
     ###Initializae mean
-    MMM =  alpha0 + beta0*X + L%*%gamma+ M%*%delta + alpha_time[time.id] + beta_time[time.id]*X + alpha_space[Z_ID] + beta_space[Z_ID]*X
+    MMM = alpha0 + beta0 * X + L %*% gamma+ M %*% delta + alpha_time[time.id] + beta_time[time.id] * X + alpha_space[Z_ID] + beta_space[Z_ID] * X
     
     ###Initializae sigma2
-    sigma2 = var (as.numeric(Y - MMM), na.rm  =T)
+    sigma2 = var(as.numeric(Y - MMM), na.rm = T)
     
     theta_alpha = 100
     theta_beta = 100
@@ -273,22 +277,22 @@ grm = function(Y,
     ###Declare lots of matrices and vectors to save results
     
     ###Total number of samples in the end
-    K = (n.iter - burn)/thin
+    K = (n.iter - burn) / thin
     
     alpha0.save = rep(NA, K)
     beta0.save = rep(NA, K)
     
-    gamma.save = matrix (NA, nrow = K, ncol = length (gamma))
-    delta.save = matrix (NA, nrow = K, ncol = length (delta))
+    gamma.save = matrix(NA, nrow = K, ncol = length(gamma))
+    delta.save = matrix(NA, nrow = K, ncol = length(delta))
     
     lambda_gamma.save = rep(NA, K)
     lambda_delta.save = rep(NA, K)
     
-    alpha_time.save = matrix (NA, nrow = K, ncol = N.time)
-    beta_time.save = matrix (NA, nrow = K, ncol = N.time)
+    alpha_time.save = matrix(NA, nrow = K, ncol = N.time)
+    beta_time.save = matrix(NA, nrow = K, ncol = N.time)
     
-    alpha_space.save = matrix (NA, nrow = K, ncol = N.spacetime*N.space)
-    beta_space.save = matrix (NA, nrow = K, ncol = N.spacetime*N.space)
+    alpha_space.save = matrix(NA, nrow = K, ncol = N.spacetime * N.space)
+    beta_space.save = matrix(NA, nrow = K, ncol = N.spacetime * N.space)
     
     sigma2.save = rep(NA, K)
     theta_alpha.save = theta_beta.save = rep(NA, K)
@@ -298,9 +302,9 @@ grm = function(Y,
     lambda_alpha.save = lambda_beta.save = rep(NA, K)
     tau_alpha.save = tau_beta.save = rep(NA, K)
     
-    LL.save = rep (NA, K)
+    LL.save = rep(NA, K)
     
-    Y.hat = rep(0, length (Y))
+    Y.hat = rep(0, length(Y))
     
     theta.acc = c(0,0)
     
@@ -316,236 +320,306 @@ grm = function(Y,
 
     for (i in 1:n.iter){
 
-      if (verbose == TRUE){
-        if ( (i %% 1000) == 0  ){ print (paste("     Iteration", i, "of", n.iter)) }
+      if (verbose == TRUE) {
+        if ((i %% 1000) == 0) print(paste("     Iteration", i, "of", n.iter))
       }
     
       ###Update alpha0 and beta0
-      MMM =  MMM - alpha0 - beta0*X 
+      MMM =  MMM - alpha0 - beta0 * X 
       RRR = Y - MMM
-      XXX = t(cbind(1,X))%*%RRR
+      XXX = t(cbind(1,X)) %*% RRR
       VVV = solve(XtX)
-      junk = matrix(rmvn (1, VVV%*%XXX, sigma2*VVV), ncol = 1)
+      junk = matrix(rmvn(1, VVV %*% XXX, sigma2 * VVV), ncol = 1)
       alpha0 = junk[1]
       beta0 = junk[2]
-      MMM = MMM + alpha0 + beta0*X
+      MMM = MMM + alpha0 + beta0 * X
       
       #Update gamma
-      if (nu$nu_gamma == 1){
-        MMM = MMM - L%*%gamma
+      if (!is.null(L)){
+        MMM = MMM - L %*% gamma
         RRR =  Y - MMM
-        XXX = 1/sigma2*t(L)%*%RRR
-        VVV = 1/sigma2*LtL + 1/lambda_gamma*diag(N.Lmax)
-        VVV = solve (VVV)
-        gamma = matrix(rmvn (1, VVV%*%XXX, VVV), ncol = 1)
-        MMM = MMM + L%*%gamma
+        XXX = 1 / sigma2 * t(L) %*% RRR
+        VVV = 1 / sigma2 * LtL + 1 / lambda_gamma * diag(N.Lmax)
+        VVV = solve(VVV)
+        gamma = matrix(rmvn(1, VVV %*% XXX, VVV), ncol = 1)
+        MMM = MMM + L %*% gamma
         
         ##Update lambda_gamma
-        lambda_gamma = 1/rgamma (1,  length(gamma)/2 + sigma.a, sum(gamma^2)/2 + sigma.b)
+        lambda_gamma = 1 / rgamma(1,  
+                                  length(gamma) / 2 + sigma.a, 
+                                  sum(gamma^2)/2 + sigma.b)
       }
       
       #Update delta
-      if (nu$nu_delta == 1){
-        MMM = MMM - M%*%delta
+      if (!is.null(M)){
+        MMM = MMM - M %*% delta
         RRR =  Y - MMM
-        XXX = 1/sigma2*t(M)%*%RRR
-        VVV = 1/sigma2*MtM + 1/lambda_delta*diag(N.Mmax)
-        VVV = solve (VVV)
-        delta = matrix(rmvn (1, VVV%*%XXX, VVV), ncol = 1)
-        MMM = MMM + M%*%delta
+        XXX = 1 / sigma2 * t(M) %*% RRR
+        VVV = 1 / sigma2 * MtM + 1 / lambda_delta * diag(N.Mmax)
+        VVV = solve(VVV)
+        delta = matrix(rmvn(1, VVV %*% XXX, VVV), ncol = 1)
+        MMM = MMM + M %*% delta
         
         ##Update lambda_delta
-        lambda_delta = 1/rgamma (1,  length(delta)/2 + sigma.a, sum(delta^2)/2 + sigma.b)
+        lambda_delta = 1 / rgamma(1, 
+                                  length(delta) / 2 + sigma.a, 
+                                  sum(delta ^ 2) / 2 + sigma.b)
       }
       
       #Update residual error sigma2
       RRR = Y - MMM
-      sigma2 = 1/rgamma (1,  length(RRR)/2 + sigma.a, sum(RRR^2)/2 + sigma.b)
+      sigma2 = 1 / rgamma(1, length(RRR) / 2 + sigma.a, sum(RRR ^ 2) / 2 + sigma.b)
        
       #Update spatial intercepts and parameters
-      if (nu$nu_alpha_S == 1){
+      if (include.additive.annual.resid) {
          MMM = MMM - alpha_space[Z_ID]
          RRR = Y - MMM
-         XXX = 1/sigma2*t(Gamma_space)%*%RRR
-         SSS = tau_alpha*exp(-dist.space.mat/theta_alpha)
-         VVV = diag(1/sigma2*GtG_space) + kronecker (solve (SSS), diag(N.spacetime))
-         VVV = solve (VVV)
-         alpha_space=rmvn (1, VVV%*%XXX, VVV)[1,]
+         XXX = 1 / sigma2 * t(Gamma_space) %*% RRR
+         SSS = tau_alpha * exp(-dist.space.mat / theta_alpha)
+         VVV = diag(1 / sigma2 * GtG_space) + kronecker(solve(SSS), diag(N.spacetime))
+         VVV = solve(VVV)
+         alpha_space = rmvn(1, VVV %*% XXX, VVV)[1,]
          MMM = MMM + alpha_space[Z_ID]
       
          #update tau_alpha
-         SSS = t(alpha_space)%*%kronecker ( solve(exp(-dist.space.mat/theta_alpha)), diag(N.spacetime))%*%alpha_space
-         tau_alpha = 1/rgamma (1, N.space*N.spacetime/2+t1.a, SSS/2+t1.b )
+         SSS = t(alpha_space) %*% 
+             kronecker(solve(exp(-dist.space.mat / theta_alpha)), 
+                       diag(N.spacetime)) %*% 
+            alpha_space
+         tau_alpha = 1 / rgamma(1, 
+                                N.space * N.spacetime / 2 + t1.a, 
+                                SSS / 2 + t1.b)
       
          #Update theta_alpha
-         theta.prop = rlnorm(1, log(theta_alpha), theta.tune)
-         SSS.curr = tau_alpha*kronecker ( (exp(-dist.space.mat/theta_alpha)), diag(N.spacetime))
-         SSS.prop = tau_alpha*kronecker ( (exp(-dist.space.mat/theta.prop)), diag(N.spacetime))
+         theta.prop = rlnorm(1, 
+                             log(theta_alpha), 
+                             theta.tune)
+         SSS.curr = tau_alpha * kronecker((exp(-dist.space.mat / theta_alpha)), 
+                                          diag(N.spacetime))
+         SSS.prop = tau_alpha * kronecker((exp(-dist.space.mat / theta.prop)), 
+                                          diag(N.spacetime))
       
-         lik.prop =  dmvnorm ( alpha_space, rep(0,N.space*N.spacetime), SSS.curr, log = T)
-         lik.curr =  dmvnorm ( alpha_space, rep(0,N.space*N.spacetime), SSS.prop, log = T)
+         lik.prop = dmvnorm(alpha_space, 
+                            rep(0, N.space * N.spacetime), 
+                            SSS.curr, 
+                            log = T)
+         lik.curr = dmvnorm(alpha_space, 
+                            rep(0, N.space * N.spacetime), 
+                            SSS.prop, 
+                            log = T)
       
-         ratio = lik.prop + dgamma (theta.prop, theta.a, theta.b, log = T) + log (theta.prop) -
-           lik.curr - dgamma (theta_alpha, theta.a, theta.b, log = T) - log(theta_alpha)
-         if ( log(runif(1)) < ratio){
-           theta_alpha = theta.prop;
+         ratio = lik.prop + 
+             dgamma(theta.prop, 
+                    theta.a, 
+                    theta.b, 
+                    log = T) + 
+             log(theta.prop) -
+             lik.curr - dgamma(theta_alpha, theta.a, theta.b, log = T) - log(theta_alpha)
+         if(log(runif(1)) < ratio) {
+           theta_alpha = theta.prop
            theta.acc[1] = theta.acc[1] + 1
          }
-      
-       }
+      }
       
       # #Update spatial coefficent for AOD
-      if (nu$nu_beta_S == 1){
-         MMM = MMM - beta_space[Z_ID]*X
+      if (include.multiplicative.annual.resid) {
+         MMM = MMM - beta_space[Z_ID] * X
          RRR = Y - MMM
-         XXX = 1/sigma2*t(Gamma_space)%*%(X*RRR)
-         SSS = tau_beta*exp(-dist.space.mat/theta_beta)
-         VVV = diag(1/sigma2*X_S) + kronecker (solve (SSS), diag(N.spacetime))
-         VVV = solve (VVV)
-         beta_space=rmvn (1, VVV%*%XXX, VVV)[1,]
-         MMM = MMM + beta_space[Z_ID]*X
+         XXX = 1 / sigma2 * t(Gamma_space) %*% (X * RRR)
+         SSS = tau_beta * exp(-dist.space.mat / theta_beta)
+         VVV = diag(1 / sigma2 * X_S) + kronecker(solve(SSS), diag(N.spacetime))
+         VVV = solve(VVV)
+         beta_space = rmvn(1, VVV %*% XXX, VVV)[1, ]
+         MMM = MMM + beta_space[Z_ID] * X
       
          #update tau_beta
-         SSS = t(beta_space)%*%kronecker ( solve(exp(-dist.space.mat/theta_beta)), diag(N.spacetime))%*%beta_space
-         tau_beta = 1/rgamma (1, N.space*N.spacetime/2+t1.a, SSS/2+t1.b )
+         SSS = t(beta_space) %*% 
+             kronecker(solve(exp(-dist.space.mat / theta_beta)), 
+                       diag(N.spacetime)) %*% 
+             beta_space
+         tau_beta = 1 / rgamma(1, N.space * N.spacetime /2 + t1.a, SSS / 2 + t1.b)
       
          #Update theta_beta
          theta.prop = rlnorm(1, log(theta_beta), theta.tune)
-         SSS.curr = tau_beta*kronecker ( (exp(-dist.space.mat/theta_beta)), diag(N.spacetime))
-         SSS.prop = tau_beta*kronecker ( (exp(-dist.space.mat/theta.prop)), diag(N.spacetime))
+         SSS.curr = tau_beta * kronecker((exp(-dist.space.mat/theta_beta)), 
+                                         diag(N.spacetime))
+         SSS.prop = tau_beta * kronecker((exp(-dist.space.mat/theta.prop)), 
+                                         diag(N.spacetime))
       
-         lik.prop =  dmvnorm ( beta_space, rep(0,N.space*N.spacetime), SSS.curr, log = T)
-         lik.curr =  dmvnorm ( beta_space, rep(0,N.space*N.spacetime), SSS.prop, log = T)
+         lik.prop = dmvnorm(beta_space, 
+                            rep(0,N.space*N.spacetime), 
+                            SSS.curr, 
+                            log = T)
+         lik.curr = dmvnorm(beta_space, 
+                            rep(0, N.space * N.spacetime), 
+                            SSS.prop, 
+                            log = T)
       
-         ratio = lik.prop + dgamma (theta.prop, theta.a, theta.b, log = T) + log (theta.prop) -
-           lik.curr - dgamma (theta_beta, theta.a, theta.b, log = T) - log(theta_beta)
-         if ( log(runif(1)) < ratio){
-           theta_beta = theta.prop;
+         ratio = lik.prop + dgamma(theta.prop,  
+                                   theta.a, 
+                                   theta.b, 
+                                   log = T) + 
+            log (theta.prop) -
+            lik.curr - 
+            dgamma(theta_beta, 
+                   theta.a, 
+                   theta.b, 
+                   log = T) - 
+            log(theta_beta)
+
+         if(log(runif(1)) < ratio) {
+           theta_beta = theta.prop
            theta.acc[2] = theta.acc[2] + 1
          }
        }
       
       #Update temporal intercepts and its parameters
-       if (nu$nu_alpha_W == 1){
+       if (include.additive.weekly.resid) {
          MMM = MMM - alpha_time[time.id]
          RRR = Y - MMM
-         XXX = 1/sigma2*t(Gamma_time)%*%RRR
-         VVV = diag(1/sigma2*GtG_time) + 1/omega_alpha*(Q - rho_alpha*A)
-         VVV = solve (VVV)
-         alpha_time=rmvn (1, VVV%*%XXX, VVV)[1,]
+         XXX = 1 / sigma2 * t(Gamma_time) %*% RRR
+         VVV = diag(1 / sigma2 * GtG_time) + 1 / omega_alpha * (Q - rho_alpha * A)
+         VVV = solve(VVV)
+         alpha_time = rmvn(1, VVV %*% XXX, VVV)[1,]
          MMM = MMM + alpha_time[time.id]
       
          #Update omega_alpha
-         SS1 = alpha_time%*%Q%*%alpha_time
-         SS2 = alpha_time%*%A%*%alpha_time
-         omega_alpha = 1/rgamma (1, N.time/2+t1.a, (SS1-rho_alpha*SS2)/2 + t1.b)
+         SS1 = alpha_time %*% Q %*% alpha_time
+         SS2 = alpha_time %*% A %*% alpha_time
+         omega_alpha = 1 / rgamma(1, N.time / 2 + t1.a, (SS1 - rho_alpha * SS2) / 2 + t1.b)
          
          #Update rho_alpha
-         R = detpart + 0.5*omega_alpha*canrho*c(SS2)
-         rho_alpha = sample(canrho, 1, prob = exp(R-max(R)))
+         R = detpart + 0.5 * omega_alpha * canrho * c(SS2)
+         rho_alpha = sample(canrho, 1, prob = exp(R - max(R)))
       }
 
       #Update temporal AOD coefficients
-      if (nu$nu_beta_W == 1){
-        MMM = MMM - beta_time[time.id]*X
+      if (include.multiplicative.weekly.resid){
+        MMM = MMM - beta_time[time.id] * X
         RRR = Y - MMM
-        XXX = 1/sigma2*t(Gamma_time)%*%(X*RRR)
-        VVV = diag(1/sigma2*X_W) + 1/omega_beta*(Q - rho_beta*A)
-        VVV = solve (VVV)
-        beta_time=rmvn (1, VVV%*%XXX, VVV)[1,]
-        MMM = MMM + beta_time[time.id]*X
+        XXX = 1 / sigma2 * t(Gamma_time) %*% (X * RRR)
+        VVV = diag(1 / sigma2 * X_W) + 1 / omega_beta * (Q - rho_beta * A)
+        VVV = solve(VVV)
+        beta_time = rmvn(1, VVV %*% XXX, VVV)[1,]
+        MMM = MMM + beta_time[time.id] * X
       
         #Update omega_beta
-        SS1 = beta_time%*%Q%*%beta_time
-        SS2 = beta_time%*%A%*%beta_time
-        omega_beta = 1/rgamma (1, N.time/2+t1.a, (SS1-rho_beta*SS2)/2 + t1.b)
+        SS1 = beta_time %*% Q %*% beta_time
+        SS2 = beta_time %*% A %*% beta_time
+        omega_beta = 1 / rgamma(1, N.time / 2 + t1.a, (SS1 - rho_beta * SS2) / 2 + t1.b)
         
         #Update rho_beta
-        R = detpart + 0.5*omega_beta*canrho*c(SS2)
-        rho_beta = sample(canrho, 1, prob = exp(R-max(R)))
+        R = detpart + 0.5 * omega_beta * canrho * c(SS2)
+        rho_beta = sample(canrho, 1, prob = exp(R - max(R)))
       }
     
      
      ###Save Samples 
      
-     if (i > burn & i %%thin == 0){
-        k = (i - burn)/thin
+     if (i > burn & i %% thin == 0){
+         k = (i - burn)/thin
 
-       #Save statistics
-       LL.save[k] = sum(-2*dnorm(Y, MMM, sqrt(sigma2), log=T))
+         #Save statistics
+         LL.save[k] = sum(-2 * dnorm(Y, MMM, sqrt(sigma2), log = T))
   
-       alpha0.save[k] = alpha0
-       beta0.save[k] = beta0
-       gamma.save[k,] = gamma
-       delta.save[k,] = delta
+         alpha0.save[k] = alpha0
+         beta0.save[k] = beta0
+         gamma.save[k, ] = gamma
+         delta.save[k, ] = delta
        
-       lambda_gamma.save[k] = lambda_gamma
-       lambda_delta.save[k] = lambda_delta
+         lambda_gamma.save[k] = lambda_gamma
+         lambda_delta.save[k] = lambda_delta
        
-       alpha_time.save[k,] = alpha_time
-       beta_time.save[k,] = beta_time
+         alpha_time.save[k,] = alpha_time
+         beta_time.save[k,] = beta_time
        
-       alpha_space.save[k,] = alpha_space
-       beta_space.save[k,] = beta_space
+         alpha_space.save[k,] = alpha_space
+         beta_space.save[k,] = beta_space
        
-       sigma2.save[k] = sigma2
-       theta_alpha.save[k] = theta_alpha
-       theta_beta.save[k] = theta_beta
-       rho_alpha.save[k] = rho_alpha
-       rho_beta.save[k] = rho_beta
+         sigma2.save[k] = sigma2
+         theta_alpha.save[k] = theta_alpha
+         theta_beta.save[k] = theta_beta
+         rho_alpha.save[k] = rho_alpha
+         rho_beta.save[k] = rho_beta
        
-       omega_alpha.save[k] = omega_alpha
-       omega_beta.save[k] = omega_beta
-       tau_alpha.save[k] = tau_alpha
-       tau_beta.save[k] = tau_beta
+         omega_alpha.save[k] = omega_alpha
+         omega_beta.save[k] = omega_beta
+         tau_alpha.save[k] = tau_alpha
+         tau_beta.save[k] = tau_beta
        
-       Y.hat = Y.hat + MMM/K
+         Y.hat = Y.hat + MMM / K
      }
 
-  }## End of MCMC iterations
+    } ## End of MCMC iterations
     
-    if (verbose == TRUE){
-      print ("#################################### ")
+    if (verbose == TRUE) {
+      print("#################################### ")
     }
     
     ##Process for output
-    delta.save = data.frame (delta.save); names (delta.save) = colnames (M)
-    gamma.save = data.frame (gamma.save); names (gamma.save) = colnames (L)
+    delta.save = data.frame(delta.save)
+    names(delta.save) = colnames(M)
+    gamma.save = data.frame(gamma.save);
+    names(gamma.save) = colnames(L)
     
     alpha_time.save = data.frame(time.id = 1:N.time, t(alpha_time.save))
-    names (alpha_time.save) = c("time.id", paste0("Sample",1:K)); row.names (alpha_time.save) = NULL
-    beta_time.save = data.frame(time.id = 1:N.time, t(beta_time.save))
-    names (beta_time.save) = c("time.id", paste0("Sample",1:K)); row.names (alpha_time.save) = NULL
+    names(alpha_time.save) = c("time.id", 
+                               paste0("Sample",1:K)) 
+    row.names(alpha_time.save) = NULL
+    beta_time.save = data.frame(time.id = 1:N.time, 
+                                t(beta_time.save))
+    names(beta_time.save) = c("time.id", 
+                              paste0("Sample",1:K)) 
+    row.names(alpha_time.save) = NULL
     
-    alpha_space.save = data.frame (space.is = rep(1:N.space, N.spacetime),
-                                   spacetime.id = rep(1:N.spacetime, each = N.space),  
-                                   t(alpha_space.save))
-    names (alpha_space.save) = c("space.is", "spacetime.id", paste0("Sample",1:K)); row.names (alpha_space.save) = NULL
-    beta_space.save = data.frame (space.is = rep(1:N.space, N.spacetime),
-                                   spacetime.id = rep(1:N.spacetime, each = N.space),  
-                                   t(beta_space.save))
-    names (beta_space.save) = c("space.is", "spacetime.id", paste0("Sample",1:K)); row.names (beta_space.save) = NULL
+    alpha_space.save = data.frame(space.is = rep(1:N.space, N.spacetime),
+                                  spacetime.id = rep(1:N.spacetime, each = N.space),  
+                                  t(alpha_space.save))
+    names(alpha_space.save) = c("space.is", 
+                                "spacetime.id", 
+                                paste0("Sample",1:K)) 
+    row.names(alpha_space.save) = NULL
+    beta_space.save = data.frame(space.is = rep(1:N.space, N.spacetime),
+                                 spacetime.id = rep(1:N.spacetime, each = N.space),  
+                                t(beta_space.save))
+    names(beta_space.save) = c("space.is", "spacetime.id", paste0("Sample",1:K))
+    row.names(beta_space.save) = NULL
     
-    other.save = data.frame (alpha0 = alpha0.save, beta0=beta0.save,
-                             sigma2 = sigma2.save,
-                             lambda_delta = lambda_delta.save, lambda_gamma = lambda_gamma.save,
-                             theta_alpha = theta_alpha.save, theta_beta = theta_beta.save, 
-                             tau_alpha = tau_alpha.save, tau_beta = tau_beta.save, 
-                             rho_alpha = rho_alpha.save, rho_beta = rho_beta.save, 
-                             omega_alpha = omega_alpha.save, omega_beta = omega_beta.save,
-                             dev = LL.save)
+    other.save = data.frame(alpha0 = alpha0.save, beta0=beta0.save,
+                            sigma2 = sigma2.save,
+                            lambda_delta = lambda_delta.save, 
+                            lambda_gamma = lambda_gamma.save,
+                            theta_alpha = theta_alpha.save, 
+                            theta_beta = theta_beta.save, 
+                            tau_alpha = tau_alpha.save, 
+                            tau_beta = tau_beta.save, 
+                            rho_alpha = rho_alpha.save, 
+                            rho_beta = rho_beta.save, 
+                            omega_alpha = omega_alpha.save, 
+                            omega_beta = omega_beta.save,
+                            dev = LL.save)
     
-    standardize.param = rbind (data.frame (Type = "X", Name = "AOD/CTM", Mean = X.mean, SD = X.sd),
-                               data.frame (Type = "L", Name = colnames (L), Mean = L.mean, SD = L.sd), 
-                               data.frame (Type = "M", Name = colnames (M), Mean = M.mean, SD = M.sd) )
-    row.names (standardize.param) = NULL
+    standardize.param = rbind(data.frame(Type = "X", 
+                                         Name = "AOD/CTM", 
+                                         Mean = X.mean, 
+                                         SD = X.sd),
+                               data.frame(Type = "L", 
+                                          Name = colnames(L), 
+                                          Mean = L.mean, 
+                                          SD = L.sd), 
+                               data.frame(Type = "M", 
+                                          Name = colnames (M), 
+                                          Mean = M.mean, SD = M.sd))
+    row.names(standardize.param) = NULL
     
-    list (delta = delta.save, gamma = gamma.save,
-          alpha_time = alpha_time.save, beta_time = beta_time.save,
-          alpha_space = alpha_space.save, beta_space = beta_space.save,
-          others = other.save, Y = Y.hat, 
-          standardize.param = standardize.param,
-          theta.acc = theta.acc
-          )
+    list(delta = delta.save, 
+         gamma = gamma.save,
+         alpha_time = alpha_time.save, 
+         beta_time = beta_time.save,
+         alpha_space = alpha_space.save, 
+         beta_space = beta_space.save,
+         others = other.save, Y = Y.hat, 
+         standardize.param = standardize.param,
+         theta.acc = theta.acc)
 }
 
