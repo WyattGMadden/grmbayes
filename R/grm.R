@@ -29,11 +29,13 @@
 #' @param sigma.b Second sigma prior hyperparameter
 #' @param verbose Print MCMC output
 #'
-#' @return A string
+#' @return A list containing MCMC output 
 #'
 #' @examples
-#' test <- "this is a test"
-#' first_fcn(test)
+#' # grm()
+#' 
+#' 
+#' @export
 grm = function(Y, 
                X, 
                L = NULL, 
@@ -611,18 +613,19 @@ grm = function(Y,
     names(beta_space.save) = c("space.id", "spacetime.id", paste0("Sample",1:K))
     row.names(beta_space.save) = NULL
     
-    other.save = data.frame(alpha0 = alpha0.save, beta0=beta0.save,
+    other.save = data.frame(alpha0 = alpha0.save, 
+                            beta0 = beta0.save,
                             sigma2 = sigma2.save,
-                            lambda_delta = lambda_delta.save, 
-                            lambda_gamma = lambda_gamma.save,
-                            theta_alpha = theta_alpha.save, 
-                            theta_beta = theta_beta.save, 
-                            tau_alpha = tau_alpha.save, 
-                            tau_beta = tau_beta.save, 
-                            rho_alpha = rho_alpha.save, 
-                            rho_beta = rho_beta.save, 
-                            omega_alpha = omega_alpha.save, 
-                            omega_beta = omega_beta.save,
+                            lambda.delta = lambda_delta.save, 
+                            lambda.gamma = lambda_gamma.save,
+                            theta.alpha = theta_alpha.save, 
+                            theta.beta = theta_beta.save, 
+                            tau.alpha = tau_alpha.save, 
+                            tau.beta = tau_beta.save, 
+                            rho.alpha = rho_alpha.save, 
+                            rho.beta = rho_beta.save, 
+                            omega.alpha = omega_alpha.save, 
+                            omega.beta = omega_beta.save,
                             dev = LL.save)
     
     standardize.param = rbind(data.frame(Type = "X", 
@@ -640,11 +643,12 @@ grm = function(Y,
     
     list(delta = delta.save, 
          gamma = gamma.save,
-         alpha_time = alpha_time.save, 
-         beta_time = beta_time.save,
-         alpha_space = alpha_space.save, 
-         beta_space = beta_space.save,
-         others = other.save, Y = Y.hat, 
+         alpha.time = alpha_time.save, 
+         beta.time = beta_time.save,
+         alpha.space = alpha_space.save, 
+         beta.space = beta_space.save,
+         others = other.save, 
+         Y = Y.hat, 
          standardize.param = standardize.param,
          theta.acc = theta.acc)
 }
