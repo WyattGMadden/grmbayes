@@ -7,14 +7,23 @@
 grm(
   Y,
   X,
-  L,
-  M,
+  L = NULL,
+  M = NULL,
   dist.space.mat,
-  space.is,
+  space.id,
   time.id,
   spacetime.id,
-  t1.a = 0.5,
-  t1.b = 0.005,
+  include.additive.weekly.resid = T,
+  include.additive.annual.resid = T,
+  include.multiplicative.weekly.resid = T,
+  include.multiplicative.annual.resid = T,
+  n.iter = 25000,
+  burn = 5000,
+  thin = 4,
+  tau.a = 0.5,
+  tau.b = 0.005,
+  omega.a = 0.5,
+  omega.b = 0.005,
   theta.tune = 0.2,
   theta.a = 5,
   theta.b = 0.05,
@@ -26,17 +35,59 @@ grm(
 \arguments{
 \item{Y}{Dependent variable vector (n).}
 
-\item{X}{Primary inependent variable vector (n).}
+\item{X}{Unstandardized primary inependent variable vector (n).}
 
-\item{L}{Spatial covariate matrix (n, p1)}
+\item{L}{Unstandardized spatial covariate matrix (n, p1)}
 
-\item{M}{Spatial covariate matrix (n, p2)}
+\item{M}{Unstandardized spatial covariate matrix (n, p2)}
+
+\item{dist.space.mat}{Spatial distance matrix}
+
+\item{space.id}{Spatial location ID vector (n)}
+
+\item{time.id}{Temporal location ID vector (n)}
+
+\item{spacetime.id}{ID vector of time points where spatial trends vary (n)}
+
+\item{include.additive.weekly.resid}{Include additive temporal (weekly) residual bias not explained by other inputes}
+
+\item{include.additive.annual.resid}{Include additive spatial (annual) residual bias not explained by other inputes}
+
+\item{include.multiplicative.weekly.resid}{Include multiplicative temporal (weekly) residual bias not explained by other inputes}
+
+\item{include.multiplicative.annual.resid}{Include multiplicative spatial (weekly) residual bias not explained by other inputes}
+
+\item{n.iter}{Number of MCMC simulations}
+
+\item{burn}{Number of pre-covergence simulations}
+
+\item{thin}{Save every thin'th simulation}
+
+\item{tau.a}{First tau prior hyperparameter}
+
+\item{tau.b}{Second tau prior hyperparameter}
+
+\item{omega.a}{First omega prior hyperparameter}
+
+\item{omega.b}{Second omega prior hyperparameter}
+
+\item{theta.tune}{Theta Metropolis-Hastings proposal tuning parameter}
+
+\item{theta.a}{First theta prior hyperparameter}
+
+\item{theta.b}{Second theta prior hyperparameter}
+
+\item{sigma.a}{First sigma prior hyperparameter}
+
+\item{sigma.b}{Second sigma prior hyperparameter}
+
+\item{verbose}{Print MCMC output}
 }
 \value{
 A string
 }
 \description{
-This function fits Bayesian Hierarchical Model (BHM) in the form of \eqn{Y \sim \beta X + \gamma L + \delta M}
+This function fits Bayesian Hierarchical Model (BHM) in the form of Y ~ beta X + gamma L + delta M
 }
 \examples{
 test <- "this is a test"
