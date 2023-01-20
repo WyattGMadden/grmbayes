@@ -5,7 +5,7 @@
 #' @inheritParams grm
 #' @param num.folds Number of folds used in the cross validation process
 #'
-#' @return A list containing MCMC output 
+#' @return A data frame containing cross validation predictions
 #'
 #' @examples
 #' # grm_cv()
@@ -174,8 +174,8 @@ grm_cv = function(Y,
 
     }
  
-    Y.CV$Upper95 = Y.CV$Est + 1.96 * Y.CV$SD
-    Y.CV$Lower95 = Y.CV$Est - 1.96 * Y.CV$SD
+    Y.CV$upper_95 = Y.CV$Est + 1.96 * Y.CV$SD
+    Y.CV$lower_95 = Y.CV$Est - 1.96 * Y.CV$SD
   
     return(Y.CV)
 }
