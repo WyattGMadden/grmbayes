@@ -111,12 +111,12 @@ grm = function(Y,
     if (!is.null(L)) L.sd = apply(L, 2, stats::sd)
     
     ### Standardize
-    X = (X-mean (X))/X.sd
-    if (!is.null(M) & !any(M.sd==0)) { 
+    X = (X - mean(X)) / X.sd
+    if (!is.null(M) & !any(M.sd == 0)) { 
         M = sweep(sweep(M, 2, M.mean, "-"), 2, M.sd, "/") 
     }
 
-    if (!is.null(L) & !any(L.sd==0)){ 
+    if (!is.null(L) & !any(L.sd == 0)) {
         L = sweep(sweep(L, 2, L.mean, "-"), 2, L.sd, "/") 
     }
     
@@ -126,15 +126,15 @@ grm = function(Y,
     
     ### Create full temporal distance matrix
     A = spam::as.spam(matrix(0, ncol=N.time, N.time)) #Adjacency matrix
-    for (i in 1:(N.time-1)){
+    for (i in 1:(N.time - 1)) {
         A[i, i + 1] = 1
     } 
 
-    for (i in 2:(N.time)){ 
+    for (i in 2:(N.time)) { 
         A[i, i - 1] = 1 
     }
 
-    Time.obs =  1:N.time %in% time.id ## T/F for which days are observed
+    Time.obs = 1:N.time %in% time.id ## T/F for which days are observed
     
     Q = spam::diag.spam(apply(A, 2, sum)) #Row sums of A 
     
@@ -148,7 +148,7 @@ grm = function(Y,
         Gamma_time[i, time.id[i]] <- 1
     }
     Gamma_time = spam::as.spam(Gamma_time)
-    GtG_time = diag(t(Gamma_time) %*% Gamma_time) 
+    GtG_time = spam::diag.spam(t(Gamma_time) %*% Gamma_time)
     
     ###Indicator Matrix for SpaceTime
     Gamma_space = matrix(0, nrow = N, ncol = N.spacetime * N.space)
@@ -156,7 +156,7 @@ grm = function(Y,
         Gamma_space[i, (spacetime.id[i]-1) * N.space + space.id[i]] <- 1
     }
     Gamma_space = spam::as.spam(Gamma_space)
-    GtG_space = diag(t(Gamma_space) %*% Gamma_space)
+    GtG_space = spam::diag.spam(t(Gamma_space) %*% Gamma_space)
     Z_ID = (spacetime.id-1) * N.space + space.id
     
     

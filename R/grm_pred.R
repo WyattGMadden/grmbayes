@@ -34,7 +34,7 @@ grm_pred = function(grm.fit,
                     verbose = TRUE) {
   
   ###Print some information
-  print("Preparing for Prediction")
+  cat("Preparing for Prediction\n")
   
   N = length(X.pred) #Total AOD observations
   N.space = max(space.id) #Total number of prediction cells
@@ -46,22 +46,22 @@ grm_pred = function(grm.fit,
   N.Mmax = ncol(M.pred) #Number of spatial-temporal predictors to use
   
   if (verbose == TRUE) {
-      print("#################################### ")
-      print("######## Preparing for MCMC ######## ")
-      print("#################################### ")
-      print(paste0("     ", 
-                   names(X.pred)[4], 
-                   " GRM Model"))
-      print(paste0("     Total number of prediction time points: ", 
+      cat("####################################\n")
+      cat("######## Preparing for MCMC ########\n")
+      cat("####################################\n")
+      cat(paste0("     Total number of prediction time points: ", 
                    N.time.obs, 
                    " (out of ", 
-                   N.time,")") )
-      print(paste0("     Total number of prediction cells: ", 
-                   N.space))
-      print(paste0("     Total number of spatial covariates: ", 
-                   N.Lmax))
-      print(paste0("     Total number of spatial-temporal covariates: ", 
-                   N.Mmax))
+                   N.time,")\n") )
+      cat(paste0("     Total number of prediction cells: ", 
+                   N.space,
+                   "\n"))
+      cat(paste0("     Total number of spatial covariates: ", 
+                   N.Lmax,
+                   "\n"))
+      cat(paste0("     Total number of spatial-temporal covariates: ", 
+                   N.Mmax,
+                   "\n"))
   }
   
   N.mon = nrow(locations.Y)
@@ -88,7 +88,7 @@ grm_pred = function(grm.fit,
 
     if (verbose == TRUE) {
 
-      print("Imputing Spatial Alphas") 
+      cat("Imputing Spatial Alphas\n") 
 
     }
 
@@ -112,7 +112,7 @@ grm_pred = function(grm.fit,
       
         if (verbose == TRUE) {
             if (m %% (n.iter / 10) == 0) {
-                print(paste("     Iteration", m, "of", n.iter))
+                cat(paste("     Iteration", m, "of", n.iter, "\n"))
             }
         }
     }
@@ -121,7 +121,7 @@ grm_pred = function(grm.fit,
   #For betas's
   if (include.multiplicative.annual.resid) {
       if (verbose == TRUE) {
-          print("Imputing Spatial Betas") 
+          cat("Imputing Spatial Betas\n") 
       }
 
       for (m in 1:n.iter) {
@@ -145,7 +145,7 @@ grm_pred = function(grm.fit,
           } #End of locations
           if (verbose == TRUE) {
               if (m %% (n.iter / 10) == 0) {
-                  print(paste("     Iteration", m, "of", n.iter))
+                  cat(paste("     Iteration", m, "of", n.iter), "\n")
               }
           }
   
@@ -167,7 +167,7 @@ grm_pred = function(grm.fit,
   delta = as.matrix(grm.fit$delta)
   gamma = as.matrix(grm.fit$gamma)
   
-  print("Wrapping up Predictions") 
+  cat("Wrapping up Predictions\n") 
   
   for (m in 1:n.iter) {
       intercept = grm.fit$others$alpha0[m] + 
@@ -176,11 +176,13 @@ grm_pred = function(grm.fit,
       slope = grm.fit$others$beta0[m] + 
           grm.fit$beta.time[time.id, m + 1] + 
           beta_space_pred[match(id.temp, id.temp.pred), m + 2]
-      fix.L = L.pred %*% gamma[m,]
-      fix.M = M.pred %*% delta[m,]
+      fix.L = L.pred %*% t(as.matrix(grm.fit$gamma[m, ]))
+      fix.M = M.pred %*% t(as.matrix(grm.fit$delta[m, ]))
     
       pred.mu = intercept + slope * X.pred + fix.L + fix.M 
-      pred.mu = pred.mu + stats::rnorm(length(pred.mu), 0, sqrt(grm.fit$others$sigma2[m])) 
+      pred.mu = pred.mu + stats::rnorm(length(pred.mu), 
+                                       0, 
+                                       sqrt(grm.fit$others$sigma2[m])) 
       results$estimate = results$estimate + pred.mu / n.iter
       results$sd = results$sd + pred.mu^2 / n.iter
   }
