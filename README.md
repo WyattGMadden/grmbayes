@@ -134,3 +134,53 @@ test_pred = grm_pred(grm.fit = maia.fit,
                      n.iter = 100,
                      verbose = T)
 ```
+
+### Stage 3
+
+``` r
+
+
+##Read in out-of-sample predictions from CV analyses
+CTM.input = ctm.fit.cv
+CTM.DateInfo = read.csv("../onedrive_code/Stage 3 Input Data/CTM_Date_Mon_ID.csv")
+
+#Check and amend date info
+if (all (CTM.DateInfo$Time_ID == CTM.input$Time_ID & CTM.DateInfo$Space_ID == CTM.input$Space_ID)){
+  CTM.input$Date = CTM.DateInfo$Date
+}
+
+MAIA.input = maia.fit.cv
+MAIA.DateInfo = read.csv("../onedrive_code/Stage 3 Input Data/MAIA_Date_Mon_ID.csv")
+#Check and amend date info
+if (all (MAIA.DateInfo$Time_ID == MAIA.input$Time_ID & MAIA.DateInfo$Space_ID == MAIA.input$Space_ID)){
+  MAIA.input$Date = MAIA.DateInfo$Date
+}
+
+
+
+d1
+d2
+dist.space.mat <- dist.mat.ctm
+space.id <- 
+n.iter = 5000
+burn = 1000
+thin = 4
+a1 = 0.001
+a2 = 0.001
+theta.tune = 0.2
+theta.a = 5
+theta.b = 0.05
+
+ensemble_spatial = function(d1, 
+                            d2, 
+                            dist.space.mat, 
+                            space.id, 
+                            n.iter = 5000, 
+                            burn = 1000, 
+                            thin = 4,
+                            a1 = 0.001, 
+                            a2 = 0.001, 
+                            theta.tune = 0.2, 
+                            theta.a = 5, 
+                            theta.b = 0.05)
+```

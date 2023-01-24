@@ -15,7 +15,7 @@
 #' @param include.additive.annual.resid Include additive spatial (annual) residual bias not explained by other inputes
 #' @param include.multiplicative.weekly.resid Include multiplicative temporal (weekly) residual bias not explained by other inputes
 #' @param include.multiplicative.annual.resid Include multiplicative spatial (weekly) residual bias not explained by other inputes
-#' @param n.iter Number of MCMC simulations
+#' @param n.iter Number of iterations used in predictions. Must be <= than post-thined and burned iterations from grm.fit
 #' @param burn Number of pre-covergence simulations
 #' @param thin Save every thin'th simulation
 #' @param tau.a First tau prior hyperparameter

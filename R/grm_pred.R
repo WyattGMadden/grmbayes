@@ -9,9 +9,8 @@
 #' @param M.pred Standardized spatio-temporal covariate matrix for all predictions (n_pred, p2)
 #' @param locations.Y Matrix of primary independent variable x, y coodinates (n_obs, 2)
 #' @param locations.pred Matrix of prediction x, y coodinates (n_pred, 2)
-#' @param n.iter Number of iterations used in predictions. Must be <= than post-thined and burned iterations from grm.fit
 #'
-#' @return A data frame containing cross validation predictions
+#' @return A data frame containing grm predictions
 #'
 #' @examples
 #' # grm_pred()
