@@ -105,7 +105,7 @@ grm_pred = function(grm.fit,
                                           paste0("Sample", m)]
             alpha.mu.m = t(Sigma12.m) %*% InvSigma22.m %*% alpha.m
             alpha.cov.m = Sigma11.m - diag(t(Sigma12.m) %*% InvSigma22.m %*% Sigma12.m)
-            alpha.m.post = rnorm(N.cell, alpha.mu.m, sqrt(alpha.cov.m))
+            alpha.m.post = stats::rnorm(N.cell, alpha.mu.m, sqrt(alpha.cov.m))
             alpha_space_pred[alpha_space_pred$spacetime.id == j, 
                              paste0("Sample",m)] = alpha.m.post
         } #End of locations
@@ -139,7 +139,7 @@ grm_pred = function(grm.fit,
               beta.cov.m = Sigma11.m - diag(t(Sigma12.m) %*% 
                                             InvSigma22.m %*% 
                                             Sigma12.m)
-              beta.m.post = rnorm(N.cell, beta.mu.m, sqrt(beta.cov.m))
+              beta.m.post = stats::rnorm(N.cell, beta.mu.m, sqrt(beta.cov.m))
               beta_space_pred[beta_space_pred$spacetime.id == j, 
                               paste0("Sample", m)] = beta.m.post
           } #End of locations
@@ -173,14 +173,14 @@ grm_pred = function(grm.fit,
       intercept = grm.fit$others$alpha0[m] + 
           grm.fit$alpha.time[time.id, m + 1] + 
           alpha_space_pred[match(id.temp, id.temp.pred), m + 2]
-      slope = others$beta0[m] + 
+      slope = grm.fit$others$beta0[m] + 
           grm.fit$beta.time[time.id, m + 1] + 
           beta_space_pred[match(id.temp, id.temp.pred), m + 2]
       fix.L = L.pred %*% gamma[m,]
       fix.M = M.pred %*% delta[m,]
     
       pred.mu = intercept + slope * X.pred + fix.L + fix.M 
-      pred.mu = pred.mu + rnorm(length(pred.mu), 0, sqrt(grm.fit$others$sigma2[m])) 
+      pred.mu = pred.mu + stats::rnorm(length(pred.mu), 0, sqrt(grm.fit$others$sigma2[m])) 
       results$estimate = results$estimate + pred.mu / n.iter
       results$sd = results$sd + pred.mu^2 / n.iter
   }
