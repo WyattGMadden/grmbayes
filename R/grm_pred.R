@@ -3,11 +3,13 @@
 #' This function fits Bayesian Hierarchical Model (BHM) in the form of Y ~ beta X + gamma L + delta M with cross-validation
 #'
 #' @inheritParams grm
+#' @param grm.fit Fit object created with grm()
 #' @param X.pred Standardized primary independent variable vector for all predictions (n_pred)
 #' @param L.pred Standardized spatial covariate matrix for all predictions (n_pred, p1)
 #' @param M.pred Standardized spatio-temporal covariate matrix for all predictions (n_pred, p2)
 #' @param locations.Y Matrix of primary independent variable x, y coodinates (n_obs, 2)
 #' @param locations.pred Matrix of prediction x, y coodinates (n_pred, 2)
+#' @param n.iter Number of iterations used in predictions. Must be <= than post-thined and burned iterations from grm.fit
 #'
 #' @return A data frame containing cross validation predictions
 #'
@@ -17,7 +19,8 @@
 #' 
 #' @export
 
-grm_pred = function(X.pred, 
+grm_pred = function(grm.fit,
+                    X.pred, 
                     L.pred, 
                     M.pred, 
                     locations.Y, 
@@ -90,15 +93,16 @@ grm_pred = function(X.pred,
     }
 
     for (m in 1:n.iter) {
-        tau.m = others$tau_alpha[m]
-        theta.m = others$theta_alpha[m]
+        tau.m = grm.fit$others$tau.alpha[m]
+        theta.m = grm.fit$others$theta.alpha[m]
         Sigma11.m = tau.m
         Sigma12.m = tau.m * exp(-1 / theta.m * D12)
         Sigma22.m = tau.m * exp(-1 / theta.m * D22)
         InvSigma22.m = solve(Sigma22.m)
-    
+  
         for (j in 1:N.spacetime) {
-            alpha.m = alpha_space[alpha_space$spacetime.id == j, paste0("Sample", m)]
+            alpha.m = grm.fit$alpha.space[grm.fit$alpha.space$spacetime.id == j, 
+                                          paste0("Sample", m)]
             alpha.mu.m = t(Sigma12.m) %*% InvSigma22.m %*% alpha.m
             alpha.cov.m = Sigma11.m - diag(t(Sigma12.m) %*% InvSigma22.m %*% Sigma12.m)
             alpha.m.post = rnorm(N.cell, alpha.mu.m, sqrt(alpha.cov.m))
@@ -121,15 +125,15 @@ grm_pred = function(X.pred,
       }
 
       for (m in 1:n.iter) {
-          tau.m = others$tau_beta[m]
-          theta.m = others$theta_beta[m]
+          tau.m = grm.fit$others$tau.beta[m]
+          theta.m = grm.fit$others$theta.beta[m]
           Sigma11.m = tau.m
           Sigma12.m = tau.m * exp(-1 / theta.m * D12)
           Sigma22.m = tau.m * exp(-1 / theta.m * D22)
           InvSigma22.m = solve(Sigma22.m)
     
           for (j in 1:N.spacetime) {
-              beta.m = beta_space[beta_space$spacetime.id == j, 
+              beta.m = grm.fit$beta.space[grm.fit$beta.space$spacetime.id == j, 
                                   paste0("Sample", m)]
               beta.mu.m = t(Sigma12.m) %*% InvSigma22.m %*% beta.m
               beta.cov.m = Sigma11.m - diag(t(Sigma12.m) %*% 
@@ -150,9 +154,9 @@ grm_pred = function(X.pred,
   
   
   ####Make Predictions
-  Results = cbind(time.id, space.id, spacetime.id)
-  Results$Estimate = 0
-  Results$SD = 0
+  results = data.frame(time.id, space.id, spacetime.id)
+  results$estimate = 0
+  results$sd = 0
   
   id.temp.pred = paste0(alpha_space_pred$space.id, 
                         "_", 
@@ -160,30 +164,30 @@ grm_pred = function(X.pred,
 
   id.temp = paste0(space.id, "_", spacetime.id)
   
-  delta = as.matrix(delta)
-  gamma = as.matrix(gamma)
+  delta = as.matrix(grm.fit$delta)
+  gamma = as.matrix(grm.fit$gamma)
   
   print("Wrapping up Predictions") 
   
   for (m in 1:n.iter) {
-      intercept = others$alpha0[m] + 
-          alpha_time[time.id, m + 1] + 
+      intercept = grm.fit$others$alpha0[m] + 
+          grm.fit$alpha.time[time.id, m + 1] + 
           alpha_space_pred[match(id.temp, id.temp.pred), m + 2]
       slope = others$beta0[m] + 
-          beta_time[time.id, m + 1] + 
+          grm.fit$beta.time[time.id, m + 1] + 
           beta_space_pred[match(id.temp, id.temp.pred), m + 2]
       fix.L = L.pred %*% gamma[m,]
       fix.M = M.pred %*% delta[m,]
     
-      pred.mu = intercept + slope*X.pred[, 4] + fix.L + fix.M 
-      pred.mu = pred.mu + rnorm(length(pred.mu), 0, sqrt(others$sigma2[m])) 
-      Results$Estimate = Results$Estimate + pred.mu / n.iter
-      Results$SD = Results$SD + pred.mu^2 / n.iter
+      pred.mu = intercept + slope * X.pred + fix.L + fix.M 
+      pred.mu = pred.mu + rnorm(length(pred.mu), 0, sqrt(grm.fit$others$sigma2[m])) 
+      results$estimate = results$estimate + pred.mu / n.iter
+      results$sd = results$sd + pred.mu^2 / n.iter
   }
 
-  Results$SD = sqrt((Results$SD - Results$Estimate^2))
+  results$sd = sqrt((results$sd - results$estimate^2))
 
 
-  return(Results)
+  return(results)
 
 }
