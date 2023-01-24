@@ -3,10 +3,10 @@
 #'
 #' This function fits Bayesian Hierarchical Model (BHM) in the form of Y ~ beta X + gamma L + delta M
 #'
-#' @param Y Dependent variable vector (n).
-#' @param X Unstandardized primary inependent variable vector (n).
+#' @param Y Dependent variable vector (n)
+#' @param X Unstandardized primary independent variable vector (n)
 #' @param L Unstandardized spatial covariate matrix (n, p1)
-#' @param M Unstandardized spatial covariate matrix (n, p2)
+#' @param M Unstandardized spatio-temporal covariate matrix (n, p2)
 #' @param dist.space.mat Spatial distance matrix 
 #' @param space.id Spatial location ID vector (n)
 #' @param time.id Temporal location ID vector (n)
@@ -103,12 +103,12 @@ grm = function(Y,
     
     ### Calculate means and standard deviation
     X.mean = mean(X)
-    if (is.null(M)) M.mean = apply(M, 2, mean)
-    if (is.null(L)) L.mean = apply(L, 2, mean)
+    if (!is.null(M)) M.mean = apply(M, 2, mean)
+    if (!is.null(L)) L.mean = apply(L, 2, mean)
     
     X.sd = stats::sd(X)
-    if (is.null(M)) M.sd = apply(M, 2, stats::sd)
-    if (is.null(L)) L.sd = apply(L, 2, stats::sd)
+    if (!is.null(M)) M.sd = apply(M, 2, stats::sd)
+    if (!is.null(L)) L.sd = apply(L, 2, stats::sd)
     
     ### Standardize
     X = (X-mean (X))/X.sd
@@ -220,8 +220,8 @@ grm = function(Y,
       fit = stats::lm(Y ~ cbind(X, L, M))
       alpha0 = stats::coef(fit)[1]
       beta0 = stats::coef(fit)[2]
-      gamma = as.matrix(stats::coef(fit)[3:(ncol(L) + 2)])
-      delta = as.matrix(stats::coef(fit)[(3 + ncol(L)):length(stats::coef(fit))])
+      gamma = stats::coef(fit)[3:(ncol(L) + 2)]
+      delta = stats::coef(fit)[(3 + ncol(L)):length(stats::coef(fit))]
       lambda_gamma = stats::var(gamma)
       lambda_delta = stats::var(delta)
       mu = alpha0 + beta0 * X + L %*% gamma + M %*% delta
@@ -231,7 +231,7 @@ grm = function(Y,
       fit = stats::lm (Y ~ cbind(X, M))
       alpha0 = stats::coef(fit)[1]
       beta0 = stats::coef(fit)[2]
-      delta = as.matrix(stats::coef(fit)[3:length(stats::coef(fit))])
+      delta = stats::coef(fit)[3:length(stats::coef(fit))]
       lambda_delta = stats::var(delta)
       mu = alpha0 + beta0 * X + M %*% delta
     }
@@ -240,7 +240,7 @@ grm = function(Y,
       fit = stats::lm (Y ~ cbind(X, L))
       alpha0 = stats::coef(fit)[1]
       beta0 = stats::coef(fit)[2]
-      gamma = as.matrix(stats::coef(fit)[3:(ncol(L)+2)])
+      gamma = stats::coef(fit)[3:(ncol(L)+2)]
       lambda_gamma = stats::var(gamma)
       mu = alpha0 + beta0 * X + L %*% gamma 
     }
@@ -363,7 +363,7 @@ grm = function(Y,
       MMM = MMM + alpha0 + beta0 * X
       
       #Update gamma
-      if (!is.null(L)){
+      if (!is.null(L)) {
         MMM = MMM - L %*% gamma
         RRR =  Y - MMM
         XXX = 1 / sigma2 * t(L) %*% RRR
@@ -379,7 +379,7 @@ grm = function(Y,
       }
       
       #Update delta
-      if (!is.null(M)){
+      if (!is.null(M)) {
         MMM = MMM - M %*% delta
         RRR =  Y - MMM
         XXX = 1 / sigma2 * t(M) %*% RRR
@@ -443,7 +443,7 @@ grm = function(Y,
                     log = T) + 
              log(theta.prop) -
              lik.curr - stats::dgamma(theta_alpha, theta.a, theta.b, log = T) - log(theta_alpha)
-         if(log(stats::runif(1)) < ratio) {
+         if (log(stats::runif(1)) < ratio) {
            theta_alpha = theta.prop
            theta.acc[1] = theta.acc[1] + 1
          }
@@ -545,7 +545,7 @@ grm = function(Y,
      ###Save Samples 
      
      if (i > burn & i %% thin == 0){
-         k = (i - burn)/thin
+         k = (i - burn) / thin
 
          #Save statistics
          LL.save[k] = sum(-2 * stats::dnorm(Y, MMM, sqrt(sigma2), log = T))
@@ -592,12 +592,12 @@ grm = function(Y,
     
     alpha_time.save = data.frame(time.id = 1:N.time, t(alpha_time.save))
     names(alpha_time.save) = c("time.id", 
-                               paste0("Sample",1:K)) 
+                               paste0("Sample", 1:K)) 
     row.names(alpha_time.save) = NULL
     beta_time.save = data.frame(time.id = 1:N.time, 
                                 t(beta_time.save))
     names(beta_time.save) = c("time.id", 
-                              paste0("Sample",1:K)) 
+                              paste0("Sample", 1:K)) 
     row.names(alpha_time.save) = NULL
     
     alpha_space.save = data.frame(space.id = rep(1:N.space, N.spacetime),
@@ -605,12 +605,12 @@ grm = function(Y,
                                   t(alpha_space.save))
     names(alpha_space.save) = c("space.id", 
                                 "spacetime.id", 
-                                paste0("Sample",1:K)) 
+                                paste0("Sample", 1:K)) 
     row.names(alpha_space.save) = NULL
     beta_space.save = data.frame(space.id = rep(1:N.space, N.spacetime),
                                  spacetime.id = rep(1:N.spacetime, each = N.space),  
                                 t(beta_space.save))
-    names(beta_space.save) = c("space.id", "spacetime.id", paste0("Sample",1:K))
+    names(beta_space.save) = c("space.id", "spacetime.id", paste0("Sample", 1:K))
     row.names(beta_space.save) = NULL
     
     other.save = data.frame(alpha0 = alpha0.save, 

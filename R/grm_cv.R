@@ -111,35 +111,34 @@ grm_cv = function(Y,
         #Standardize
         standardize.param = fit.cv$standardize.param
     
-        X.test = (X.test - standardize.param[, standardize.param$Type == "X"]$Mean) / 
-            standardize.param[, standardize.param$Type == "X"]$SD
+        X.test = (X.test - standardize.param[standardize.param$Type == "X", ]$Mean) / 
+            standardize.param[standardize.param$Type == "X", ]$SD
     
-        L.var = as.character(standardize.param[, standardize.param$Type == "L"]$Name)
+        L.var = as.character(standardize.param[standardize.param$Type == "L", ]$Name)
 
         for (l in L.var) {
             L.test[, colnames(L.test) == l] = (L.test[, colnames(L.test) == l] - 
-                                               standardize.param[, standardize.param$Name == l]$Mean) / 
-            standardize.param[, standardize.param$Name == l]$SD
+                                               standardize.param[standardize.param$Name == l, ]$Mean) / 
+            standardize.param[standardize.param$Name == l, ]$SD
     }
     
-    M.var = as.character(standardize.param[, standardize.param$Type == "M"]$Name)
+    M.var = as.character(standardize.param[standardize.param$Type == "M", ]$Name)
 
     for (m in M.var) {
         M.test[, colnames(M.test) == m] = (M.test[, colnames(M.test) == m] - 
-                                           standardize.param[, standardize.param$Name == m]$Mean) / 
-        standardize.param[, standardize.param$Name == m]$SD
+                                           standardize.param[standardize.param$Name == m, ]$Mean) / 
+        standardize.param[standardize.param$Name == m, ]$SD
     }
-    
     ##Make predictions
-    CV.Results = data.frame(Time_ID = time.id,
-                            Space_ID = space.id,
-                            SpaceTime_ID = spacetime.id)
+    CV.Results = data.frame(Time_ID = time.id[CV.id == CV.i],
+                            Space_ID = space.id[CV.id == CV.i],
+                            SpaceTime_ID = spacetime.id[CV.id == CV.i])
     CV.Results$Estimate = 0
     CV.Results$SD = 0
     
-    id.temp.train = paste0(fit.cv$alpha_space$space.id, 
+    id.temp.train = paste0(fit.cv$alpha.space$space.id, 
                            "_", 
-                           fit.cv$alpha_space$spacetime.id)
+                           fit.cv$alpha.space$spacetime.id)
 
     id.temp = paste0(Space_ID.test, 
                      "_", 
@@ -174,8 +173,8 @@ grm_cv = function(Y,
 
     }
  
-    Y.CV$upper_95 = Y.CV$Est + 1.96 * Y.CV$SD
-    Y.CV$lower_95 = Y.CV$Est - 1.96 * Y.CV$SD
+    Y.CV$upper_95 = Y.CV$estimate + 1.96 * Y.CV$sd
+    Y.CV$lower_95 = Y.CV$estimate - 1.96 * Y.CV$sd
   
     return(Y.CV)
 }

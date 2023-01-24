@@ -33,13 +33,13 @@ grm(
 )
 }
 \arguments{
-\item{Y}{Dependent variable vector (n).}
+\item{Y}{Dependent variable vector (n)}
 
-\item{X}{Unstandardized primary inependent variable vector (n).}
+\item{X}{Unstandardized primary independent variable vector (n)}
 
 \item{L}{Unstandardized spatial covariate matrix (n, p1)}
 
-\item{M}{Unstandardized spatial covariate matrix (n, p2)}
+\item{M}{Unstandardized spatio-temporal covariate matrix (n, p2)}
 
 \item{dist.space.mat}{Spatial distance matrix}
 
