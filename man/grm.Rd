@@ -57,7 +57,7 @@ grm(
 
 \item{include.multiplicative.annual.resid}{Include multiplicative spatial (weekly) residual bias not explained by other inputes}
 
-\item{n.iter}{Number of MCMC simulations}
+\item{n.iter}{Number of iterations used in predictions. Must be <= than post-thined and burned iterations from grm.fit}
 
 \item{burn}{Number of pre-covergence simulations}
 

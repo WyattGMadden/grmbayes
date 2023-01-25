@@ -48,7 +48,7 @@ grm_pred(
 \item{verbose}{Print MCMC output}
 }
 \value{
-A data frame containing cross validation predictions
+A data frame containing grm predictions
 }
 \description{
 This function fits Bayesian Hierarchical Model (BHM) in the form of Y ~ beta X + gamma L + delta M with cross-validation
