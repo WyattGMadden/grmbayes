@@ -184,18 +184,6 @@ MAIA.input = MAIA.input[order(MAIA.input$space_id,
 d1 = dnorm(MAIA.input$obs, MAIA.input$estimate_ctm, MAIA.input$sd_ctm)
 d2 = dnorm(MAIA.input$obs, MAIA.input$estimate, MAIA.input$sd)
 
-d1
-d2
-dist.space.mat <- dist.mat.ctm
-space.id <- MAIA.input$space_id
-n.iter = 5000
-burn = 1000
-thin = 4
-tau.a = 0.001
-tau.b = 0.001
-theta.tune = 0.2
-theta.a = 5
-theta.b = 0.05
 
 ensemble_fit = ensemble_spatial(d1, 
                                 d2, 
