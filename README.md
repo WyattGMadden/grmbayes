@@ -188,7 +188,7 @@ d2 = dnorm(MAIA.input$obs, MAIA.input$estimate, MAIA.input$sd)
 ensemble_fit = ensemble_spatial(d1 = d1, 
                                 d2 = d2, 
                                 dist.space.mat = dist.mat.ctm, 
-                                space.id MAIA.input$space_id, 
+                                space.id = MAIA.input$space_id, 
                                 n.iter = 5000, 
                                 burn = 1000, 
                                 thin = 4,
