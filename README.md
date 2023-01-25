@@ -15,7 +15,6 @@ The goal of ensembleDownscaleR is to …
 You can install the development version of ensembleDownscaleR like so:
 
 ``` r
-# repo is currently private
 install_github("WyattGMadden/ensembleDownscaleR")
 ```
 
@@ -69,16 +68,16 @@ dist.mat.maia <- as.matrix(dist(monitor.locs.maia[, -1],
                           upper = TRUE))
 
 maia.fit <- grm(Y = Y.input.maia$pm25,
-              X = X.input.maia$aod,
-              L = L.input.maia[, 4:ncol(L.input.maia)],
-              M = M.input.maia[, 4:ncol(M.input.maia)],
-              n.iter = 500,
-              burn = 100,
-              thin = 4,
-              dist.space.mat = dist.mat.maia, 
-              space.id = Y.input.maia$Space_ID,
-              time.id = Y.input.maia$Time_ID,
-              spacetime.id = Y.input.maia$SpaceTime_ID)
+                X = X.input.maia$aod,
+                L = L.input.maia[, 4:ncol(L.input.maia)],
+                M = M.input.maia[, 4:ncol(M.input.maia)],
+                n.iter = 500,
+                burn = 100,
+                thin = 4,
+                dist.space.mat = dist.mat.maia, 
+                space.id = Y.input.maia$Space_ID,
+                time.id = Y.input.maia$Time_ID,
+                spacetime.id = Y.input.maia$SpaceTime_ID)
 
 maia.fit.cv <- grm_cv(Y = Y.input.maia$pm25,
                       X = X.input.maia$aod,
@@ -197,4 +196,26 @@ ensemble_fit = ensemble_spatial(d1 = d1,
                                 theta.tune = 0.2, 
                                 theta.a = 5, 
                                 theta.b = 0.05)
+```
+
+### Stage 4
+
+``` r
+
+#Monitoring locations and all grid cell locations
+Monitor_XY <- monitor.locs.ctm
+Cell_XY <- pred.locs.ctm
+
+
+q.samples <- ensemble_fit$q
+
+
+theta.samples <- ensemble_fit$other$theta
+tau2.samples <- ensemble_fit$other$tau2
+
+weight_preds <- weight_pred(q = ensemble_fit$q, 
+                            theta = ensemble_fit$other$theta,
+                            tau2 = ensemble_fit$other$tau2,
+                            locations.Y = monitor.locs.ctm, 
+                            locations.pred = pred.locs.ctm)
 ```
