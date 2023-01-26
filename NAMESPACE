@@ -2,6 +2,7 @@
 
 export(ensemble_spatial)
 export(first_fcn)
+export(gap_fill)
 export(grm)
 export(grm_cv)
 export(grm_pred)

@@ -178,7 +178,8 @@ grm_pred = function(grm.fit,
       fix.L = L.pred %*% t(as.matrix(grm.fit$gamma[m, ]))
       fix.M = M.pred %*% t(as.matrix(grm.fit$delta[m, ]))
     
-      pred.mu = intercept + slope * X.pred + fix.L + fix.M 
+      pred.mu = intercept + slope * X.pred + 
+          as.vector(fix.L) + as.vector(fix.M)
       pred.mu = pred.mu + stats::rnorm(length(pred.mu), 
                                        0, 
                                        sqrt(grm.fit$others$sigma2[m])) 

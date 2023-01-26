@@ -15,7 +15,7 @@ The goal of ensembleDownscaleR is to …
 You can install the development version of ensembleDownscaleR like so:
 
 ``` r
-install_github("WyattGMadden/ensembleDownscaleR")
+devtools::install_github("WyattGMadden/ensembleDownscaleR")
 ```
 
 ## Example
@@ -100,26 +100,26 @@ L.pred.ctm = as.matrix(read.csv("../onedrive_code/Stage 2 Input data/CTM/L.csv")
 M.pred.ctm = as.matrix(read.csv("../onedrive_code/Stage 2 Input data/CTM/M.csv"))
 X.pred.ctm = read.csv("../onedrive_code/Stage 2 Input data/CTM/X.csv")
 
-test_pred = grm_pred(grm.fit = ctm.fit,
-                     X.pred = X.pred.ctm$CTM, 
-                     L.pred = L.pred.ctm[, 4:ncol(L.pred.ctm)], 
-                     M.pred = M.pred.ctm[, 4:ncol(M.pred.ctm)], 
-                     locations.Y = monitor.locs.ctm[, -1], 
-                     locations.pred = pred.locs.ctm[, -1], 
-                     space.id = X.pred.ctm$Space_ID, 
-                     time.id = X.pred.ctm$Time_ID, 
-                     spacetime.id = X.pred.ctm$SpaceTime_ID,
-                     include.additive.annual.resid = T,
-                     include.multiplicative.annual.resid = T,
-                     n.iter = 100,
-                     verbose = T)
+ctm.pred = grm_pred(grm.fit = ctm.fit,
+                    X.pred = X.pred.ctm$CTM, 
+                    L.pred = L.pred.ctm[, 4:ncol(L.pred.ctm)], 
+                    M.pred = M.pred.ctm[, 4:ncol(M.pred.ctm)], 
+                    locations.Y = monitor.locs.ctm[, -1], 
+                    locations.pred = pred.locs.ctm[, -1], 
+                    space.id = X.pred.ctm$Space_ID, 
+                    time.id = X.pred.ctm$Time_ID, 
+                    spacetime.id = X.pred.ctm$SpaceTime_ID,
+                    include.additive.annual.resid = T,
+                    include.multiplicative.annual.resid = T,
+                    n.iter = 100,
+                    verbose = T)
 
 pred.locs.maia = as.matrix(read.csv("../onedrive_code/Stage 2 Input data/MAIA/Cell_XY.csv"))
 L.pred.maia = as.matrix(read.csv("../onedrive_code/Stage 2 Input data/MAIA/L.csv"))
 M.pred.maia = as.matrix(read.csv("../onedrive_code/Stage 2 Input data/MAIA/M.csv"))
 X.pred.maia = read.csv("../onedrive_code/Stage 2 Input data/MAIA/X.csv")
 
-test_pred = grm_pred(grm.fit = maia.fit,
+maia.pred = grm_pred(grm.fit = maia.fit,
                      X.pred = X.pred.maia$aod, 
                      L.pred = L.pred.maia[, 4:ncol(L.pred.maia)], 
                      M.pred = M.pred.maia[, 4:ncol(M.pred.maia)], 
@@ -139,55 +139,55 @@ test_pred = grm_pred(grm.fit = maia.fit,
 ``` r
 
 
-##Read in out-of-sample predictions from CV analyses
-CTM.input = ctm.fit.cv
-CTM.DateInfo = read.csv("../onedrive_code/Stage 3 Input Data/CTM_Date_Mon_ID.csv")
+# Read in out-of-sample predictions from CV analyses
+ctm.input = ctm.fit.cv
+ctm.dateinfo = read.csv("../onedrive_code/Stage 3 Input Data/CTM_Date_Mon_ID.csv")
 
-#Check and amend date info
-if (all (CTM.DateInfo$Time_ID == CTM.input$Time_ID & CTM.DateInfo$Space_ID == CTM.input$Space_ID)){
-  CTM.input$date = CTM.DateInfo$Date
+# Check and amend date info
+if (all (ctm.dateinfo$Time_ID == ctm.input$Time_ID & ctm.dateinfo$Space_ID == ctm.input$Space_ID)){
+  ctm.input$date = ctm.dateinfo$Date
 }
 
-MAIA.input = maia.fit.cv
-MAIA.DateInfo = read.csv("../onedrive_code/Stage 3 Input Data/MAIA_Date_Mon_ID.csv")
+maia.input = maia.fit.cv
+maia.dateinfo = read.csv("../onedrive_code/Stage 3 Input Data/MAIA_Date_Mon_ID.csv")
 #Check and amend date info
-if (all (MAIA.DateInfo$Time_ID == MAIA.input$time_id & MAIA.DateInfo$Space_ID == MAIA.input$space_id)){
-  MAIA.input$date = MAIA.DateInfo$Date
+if (all (maia.dateinfo$Time_ID == maia.input$time_id & maia.dateinfo$Space_ID == maia.input$space_id)){
+  maia.input$date = maia.dateinfo$Date
 }
 
 
-#Remove NA's from the first and last time interval
-CTM.input = subset(CTM.input, !is.na(estimate))
-MAIA.input = subset(MAIA.input, !is.na(estimate))
+# Remove NA's from the first and last time interval
+ctm.input = subset(ctm.input, !is.na(estimate))
+maia.input = subset(maia.input, !is.na(estimate))
 
-#Use only CTM results with AOD is observed
-CTM.input$link_id = paste(CTM.input$date, 
-                          CTM.input$space_id, 
+# Use only CTM results with AOD is observed
+ctm.input$link_id = paste(ctm.input$date, 
+                          ctm.input$space_id, 
                           sep = "_")
-MAIA.input$link_id = paste(MAIA.input$date, 
-                           MAIA.input$space_id, 
+maia.input$link_id = paste(maia.input$date, 
+                           maia.input$space_id, 
                            sep = "_")
-CTM.input = subset(CTM.input, 
-                   link_id %in% MAIA.input$link_id)
+ctm.input = subset(ctm.input, 
+                   link_id %in% maia.input$link_id)
 
-MAIA.input$estimate_ctm = CTM.input$estimate[match(CTM.input$link_id, 
-                                              MAIA.input$link_id)]
-MAIA.input$sd_ctm = CTM.input$estimate[match(CTM.input$link_id, 
-                                             MAIA.input$link_id)]
+maia.input$estimate_ctm = ctm.input$estimate[match(ctm.input$link_id, 
+                                              maia.input$link_id)]
+maia.input$sd_ctm = ctm.input$estimate[match(ctm.input$link_id, 
+                                             maia.input$link_id)]
 
-MAIA.input = MAIA.input[order(MAIA.input$space_id, 
-                              MAIA.input$date), ]
+maia.input = maia.input[order(maia.input$space_id, 
+                              maia.input$date), ]
 
 
-#Calculate densities
-d1 = dnorm(MAIA.input$obs, MAIA.input$estimate_ctm, MAIA.input$sd_ctm)
-d2 = dnorm(MAIA.input$obs, MAIA.input$estimate, MAIA.input$sd)
+# Calculate densities
+d1 = dnorm(maia.input$obs, maia.input$estimate_ctm, maia.input$sd_ctm)
+d2 = dnorm(maia.input$obs, maia.input$estimate, maia.input$sd)
 
 
 ensemble_fit = ensemble_spatial(d1 = d1, 
                                 d2 = d2, 
                                 dist.space.mat = dist.mat.ctm, 
-                                space.id = MAIA.input$space_id, 
+                                space.id = maia.input$space_id, 
                                 n.iter = 5000, 
                                 burn = 1000, 
                                 thin = 4,
@@ -202,20 +202,44 @@ ensemble_fit = ensemble_spatial(d1 = d1,
 
 ``` r
 
-#Monitoring locations and all grid cell locations
-Monitor_XY <- monitor.locs.ctm
-Cell_XY <- pred.locs.ctm
-
-
-q.samples <- ensemble_fit$q
-
-
-theta.samples <- ensemble_fit$other$theta
-tau2.samples <- ensemble_fit$other$tau2
-
 weight_preds <- weight_pred(q = ensemble_fit$q, 
                             theta = ensemble_fit$other$theta,
                             tau2 = ensemble_fit$other$tau2,
                             locations.Y = monitor.locs.ctm, 
                             locations.pred = pred.locs.ctm)
+
+#Stage 2 predictions and Date info
+ctm.dateinfo = read.csv ("../onedrive_code/Stage 4 Input Data/CTM_Pred_Date_Cell_ID.csv")
+if (all (ctm.dateinfo$Time_ID == ctm.pred$time.id & 
+         ctm.dateinfo$space.id == ctm.pred$space.id)) {
+    ctm.pred$date = ctm.dateinfo$Date
+}
+
+maia.dateinfo = read.csv("../onedrive_code/Stage 4 Input Data/MAIA_Pred_Date_Cell_ID.csv")
+
+if (all (maia.dateinfo$time.id == maia.pred$time.id & 
+         maia.dateinfo$space.id == maia.pred$space.id)) {
+    maia.pred$date = maia.dateinfo$Date
+}
+
+#Merge MAIA predictions onto CTM prediction dataset
+ctm.pred$link_id = paste(ctm.pred$date, 
+                         ctm.pred$space.id, 
+                         sep = "_")
+maia.pred$link_id = paste(maia.pred$date, 
+                          maia.pred$space.id, 
+                          sep = "_")
+
+ctm.pred$estimate_maia = maia.pred$estimate[match(ctm.pred$estimate, 
+                                                  maia.pred$estimate)]
+ctm.pred$sd_maia = maia.pred$sd[match(ctm.pred$link_id, 
+                                      maia.pred$link_id)]
+
+# Perform Gap Filling
+results = gap_fill(Y.pred.1 = ctm.pred$estimate, 
+                   Y.pred.2 = ctm.pred$estimate_maia, 
+                   Y.sd.1 = ctm.pred$sd, 
+                   Y.sd.2 = ctm.pred$sd_maia, 
+                   space.id = ctm.pred$space.id, 
+                   weights = weight_preds)
 ```
