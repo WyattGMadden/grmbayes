@@ -102,11 +102,13 @@ X.pred.ctm = read.csv("../onedrive_code/Stage 2 Input data/CTM/X.csv")
 
 #standardize
 for (i in 4:ncol(L.pred.ctm)) {
-         L.pred.ctm[, i] <- (L.pred.ctm[, i] - mean(L.pred.ctm[, i])) / sd(L.pred.ctm[, i])
+         L.pred.ctm[, i] <- (L.pred.ctm[, i] - mean(L.pred.ctm[, i])) / 
+             sd(L.pred.ctm[, i])
 }
 
 for (i in 4:ncol(M.pred.ctm)) {
-         M.pred.ctm[, i] <- (M.pred.ctm[, i] - mean(M.pred.ctm[, i])) / sd(M.pred.ctm[, i])
+         M.pred.ctm[, i] <- (M.pred.ctm[, i] - mean(M.pred.ctm[, i])) / 
+             sd(M.pred.ctm[, i])
 }
 
 X.pred.ctm$CTM <- (X.pred.ctm$CTM - mean(X.pred.ctm$CTM)) / 
@@ -150,11 +152,13 @@ maia.pred = grm_pred(grm.fit = maia.fit,
                      verbose = T)
 #standardize
 for (i in 4:ncol(L.pred.maia)) {
-         L.pred.maia[, i] <- (L.pred.maia[, i] - mean(L.pred.maia[, i])) / sd(L.pred.maia[, i])
+         L.pred.maia[, i] <- (L.pred.maia[, i] - mean(L.pred.maia[, i])) / 
+             sd(L.pred.maia[, i])
 }
 
 for (i in 4:ncol(M.pred.maia)) {
-         M.pred.maia[, i] <- (M.pred.maia[, i] - mean(M.pred.maia[, i])) / sd(M.pred.maia[, i])
+         M.pred.maia[, i] <- (M.pred.maia[, i] - mean(M.pred.maia[, i])) / 
+             sd(M.pred.maia[, i])
 }
 
 X.pred.maia$aod <- (X.pred.maia$aod - mean(X.pred.maia$aod)) / 
@@ -171,14 +175,16 @@ ctm.input = ctm.fit.cv
 ctm.dateinfo = read.csv("../onedrive_code/Stage 3 Input Data/CTM_Date_Mon_ID.csv")
 
 # Check and amend date info
-if (all (ctm.dateinfo$Time_ID == ctm.input$Time_ID & ctm.dateinfo$Space_ID == ctm.input$Space_ID)){
+if (all (ctm.dateinfo$Time_ID == ctm.input$Time_ID & 
+         ctm.dateinfo$Space_ID == ctm.input$Space_ID)){
   ctm.input$date = ctm.dateinfo$Date
 }
 
 maia.input = maia.fit.cv
 maia.dateinfo = read.csv("../onedrive_code/Stage 3 Input Data/MAIA_Date_Mon_ID.csv")
 #Check and amend date info
-if (all (maia.dateinfo$Time_ID == maia.input$time_id & maia.dateinfo$Space_ID == maia.input$space_id)){
+if (all (maia.dateinfo$Time_ID == maia.input$time_id & 
+         maia.dateinfo$Space_ID == maia.input$space_id)){
   maia.input$date = maia.dateinfo$Date
 }
 
