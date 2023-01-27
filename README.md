@@ -100,6 +100,22 @@ L.pred.ctm = as.matrix(read.csv("../onedrive_code/Stage 2 Input data/CTM/L.csv")
 M.pred.ctm = as.matrix(read.csv("../onedrive_code/Stage 2 Input data/CTM/M.csv"))
 X.pred.ctm = read.csv("../onedrive_code/Stage 2 Input data/CTM/X.csv")
 
+#standardize
+for (i in 4:ncol(L.pred.ctm)) {
+         L.pred.ctm[, i] <- (L.pred.ctm[, i] - mean(L.pred.ctm[, i])) / sd(L.pred.ctm[, i])
+}
+
+for (i in 4:ncol(M.pred.ctm)) {
+         M.pred.ctm[, i] <- (M.pred.ctm[, i] - mean(M.pred.ctm[, i])) / sd(M.pred.ctm[, i])
+}
+
+X.pred.ctm$CTM <- (X.pred.ctm$CTM - mean(X.pred.ctm$CTM)) / 
+    sd(X.pred.ctm$CTM)
+
+
+
+
+
 ctm.pred = grm_pred(grm.fit = ctm.fit,
                     X.pred = X.pred.ctm$CTM, 
                     L.pred = L.pred.ctm[, 4:ncol(L.pred.ctm)], 
@@ -132,6 +148,17 @@ maia.pred = grm_pred(grm.fit = maia.fit,
                      include.multiplicative.annual.resid = T,
                      n.iter = 100,
                      verbose = T)
+#standardize
+for (i in 4:ncol(L.pred.maia)) {
+         L.pred.maia[, i] <- (L.pred.maia[, i] - mean(L.pred.maia[, i])) / sd(L.pred.maia[, i])
+}
+
+for (i in 4:ncol(M.pred.maia)) {
+         M.pred.maia[, i] <- (M.pred.maia[, i] - mean(M.pred.maia[, i])) / sd(M.pred.maia[, i])
+}
+
+X.pred.maia$aod <- (X.pred.maia$aod - mean(X.pred.maia$aod)) / 
+    sd(X.pred.maia$aod)
 ```
 
 ### Stage 3
