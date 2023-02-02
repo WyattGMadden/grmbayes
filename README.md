@@ -95,10 +95,10 @@ maia.fit.cv <- grm_cv(Y = Y.input.maia$pm25,
 ### Stage 2
 
 ``` r
-pred.locs.ctm = as.matrix(read.csv("../onedrive_code/Stage 2 Input data/CTM/Cell_XY.csv"))
-L.pred.ctm = as.matrix(read.csv("../onedrive_code/Stage 2 Input data/CTM/L.csv"))
-M.pred.ctm = as.matrix(read.csv("../onedrive_code/Stage 2 Input data/CTM/M.csv"))
-X.pred.ctm = read.csv("../onedrive_code/Stage 2 Input data/CTM/X.csv")
+pred.locs.ctm <- as.matrix(read.csv("../onedrive_code/Stage 2 Input data/CTM/Cell_XY.csv"))
+L.pred.ctm <- as.matrix(read.csv("../onedrive_code/Stage 2 Input data/CTM/L.csv"))
+M.pred.ctm <- as.matrix(read.csv("../onedrive_code/Stage 2 Input data/CTM/M.csv"))
+X.pred.ctm <- read.csv("../onedrive_code/Stage 2 Input data/CTM/X.csv")
 
 #standardize
 for (i in 4:ncol(L.pred.ctm)) {
@@ -171,17 +171,17 @@ X.pred.maia$aod <- (X.pred.maia$aod - mean(X.pred.maia$aod)) /
 
 
 # Read in out-of-sample predictions from CV analyses
-ctm.input = ctm.fit.cv
-ctm.dateinfo = read.csv("../onedrive_code/Stage 3 Input Data/CTM_Date_Mon_ID.csv")
+ctm.input <- ctm.fit.cv
+ctm.dateinfo <- read.csv("../onedrive_code/Stage 3 Input Data/CTM_Date_Mon_ID.csv")
 
 # Check and amend date info
 if (all (ctm.dateinfo$Time_ID == ctm.input$Time_ID & 
          ctm.dateinfo$Space_ID == ctm.input$Space_ID)){
-  ctm.input$date = ctm.dateinfo$Date
+  ctm.input$date <- ctm.dateinfo$Date
 }
 
-maia.input = maia.fit.cv
-maia.dateinfo = read.csv("../onedrive_code/Stage 3 Input Data/MAIA_Date_Mon_ID.csv")
+maia.input <- maia.fit.cv
+maia.dateinfo <- read.csv("../onedrive_code/Stage 3 Input Data/MAIA_Date_Mon_ID.csv")
 #Check and amend date info
 if (all (maia.dateinfo$Time_ID == maia.input$time_id & 
          maia.dateinfo$Space_ID == maia.input$space_id)){
@@ -190,45 +190,45 @@ if (all (maia.dateinfo$Time_ID == maia.input$time_id &
 
 
 # Remove NA's from the first and last time interval
-ctm.input = subset(ctm.input, !is.na(estimate))
-maia.input = subset(maia.input, !is.na(estimate))
+ctm.input <- subset(ctm.input, !is.na(estimate))
+maia.input <- subset(maia.input, !is.na(estimate))
 
 # Use only CTM results with AOD is observed
-ctm.input$link_id = paste(ctm.input$date, 
+ctm.input$link_id <- paste(ctm.input$date, 
                           ctm.input$space_id, 
                           sep = "_")
-maia.input$link_id = paste(maia.input$date, 
+maia.input$link_id <- paste(maia.input$date, 
                            maia.input$space_id, 
                            sep = "_")
-ctm.input = subset(ctm.input, 
+ctm.input <- subset(ctm.input, 
                    link_id %in% maia.input$link_id)
 
-maia.input$estimate_ctm = ctm.input$estimate[match(ctm.input$link_id, 
+maia.input$estimate_ctm <- ctm.input$estimate[match(ctm.input$link_id, 
                                               maia.input$link_id)]
-maia.input$sd_ctm = ctm.input$estimate[match(ctm.input$link_id, 
+maia.input$sd_ctm <- ctm.input$estimate[match(ctm.input$link_id, 
                                              maia.input$link_id)]
 
-maia.input = maia.input[order(maia.input$space_id, 
+maia.input <- maia.input[order(maia.input$space_id, 
                               maia.input$date), ]
 
 
 # Calculate densities
-d1 = dnorm(maia.input$obs, maia.input$estimate_ctm, maia.input$sd_ctm)
-d2 = dnorm(maia.input$obs, maia.input$estimate, maia.input$sd)
+d1 <- dnorm(maia.input$obs, maia.input$estimate_ctm, maia.input$sd_ctm)
+d2 <- dnorm(maia.input$obs, maia.input$estimate, maia.input$sd)
 
 
-ensemble_fit = ensemble_spatial(d1 = d1, 
-                                d2 = d2, 
-                                dist.space.mat = dist.mat.ctm, 
-                                space.id = maia.input$space_id, 
-                                n.iter = 5000, 
-                                burn = 1000, 
-                                thin = 4,
-                                tau.a = 0.001, 
-                                tau.b = 0.001, 
-                                theta.tune = 0.2, 
-                                theta.a = 5, 
-                                theta.b = 0.05)
+ensemble_fit <- ensemble_spatial(d1 = d1, 
+                                 d2 = d2, 
+                                 dist.space.mat = dist.mat.ctm, 
+                                 space.id = maia.input$space_id, 
+                                 n.iter = 5000, 
+                                 burn = 1000, 
+                                 thin = 4,
+                                 tau.a = 0.001, 
+                                 tau.b = 0.001, 
+                                 theta.tune = 0.2, 
+                                 theta.a = 5, 
+                                 theta.b = 0.05)
 ```
 
 ### Stage 4
@@ -242,37 +242,37 @@ weight_preds <- weight_pred(q = ensemble_fit$q,
                             locations.pred = pred.locs.ctm)
 
 #Stage 2 predictions and Date info
-ctm.dateinfo = read.csv ("../onedrive_code/Stage 4 Input Data/CTM_Pred_Date_Cell_ID.csv")
-if (all (ctm.dateinfo$Time_ID == ctm.pred$time.id & 
-         ctm.dateinfo$space.id == ctm.pred$space.id)) {
-    ctm.pred$date = ctm.dateinfo$Date
+ctm.dateinfo.pred <- read.csv ("../onedrive_code/Stage 4 Input Data/CTM_Pred_Date_Cell_ID.csv")
+if (all (ctm.dateinfo.pred$Time_ID == ctm.pred$time.id & 
+         ctm.dateinfo.pred$space.id == ctm.pred$space.id)) {
+    ctm.pred$date <- ctm.dateinfo.pred$Date
 }
 
-maia.dateinfo = read.csv("../onedrive_code/Stage 4 Input Data/MAIA_Pred_Date_Cell_ID.csv")
+maia.dateinfo.pred <- read.csv("../onedrive_code/Stage 4 Input Data/MAIA_Pred_Date_Cell_ID.csv")
 
-if (all (maia.dateinfo$time.id == maia.pred$time.id & 
-         maia.dateinfo$space.id == maia.pred$space.id)) {
-    maia.pred$date = maia.dateinfo$Date
+if (all (maia.dateinfo.pred$time.id == maia.pred$time.id & 
+         maia.dateinfo.pred$space.id == maia.pred$space.id)) {
+    maia.pred$date <- maia.dateinfo.pred$Date
 }
 
 #Merge MAIA predictions onto CTM prediction dataset
-ctm.pred$link_id = paste(ctm.pred$date, 
-                         ctm.pred$space.id, 
-                         sep = "_")
-maia.pred$link_id = paste(maia.pred$date, 
-                          maia.pred$space.id, 
+ctm.pred$link_id <- paste(ctm.pred$date, 
+                          ctm.pred$space.id, 
                           sep = "_")
+maia.pred$link_id <- paste(maia.pred$date, 
+                           maia.pred$space.id, 
+                           sep = "_")
 
-ctm.pred$estimate_maia = maia.pred$estimate[match(ctm.pred$estimate, 
-                                                  maia.pred$estimate)]
-ctm.pred$sd_maia = maia.pred$sd[match(ctm.pred$link_id, 
-                                      maia.pred$link_id)]
+ctm.pred$estimate_maia <- maia.pred$estimate[match(ctm.pred$estimate, 
+                                                   maia.pred$estimate)]
+ctm.pred$sd_maia <- maia.pred$sd[match(ctm.pred$link_id, 
+                                       maia.pred$link_id)]
 
 # Perform Gap Filling
-results = gap_fill(Y.pred.1 = ctm.pred$estimate, 
-                   Y.pred.2 = ctm.pred$estimate_maia, 
-                   Y.sd.1 = ctm.pred$sd, 
-                   Y.sd.2 = ctm.pred$sd_maia, 
-                   space.id = ctm.pred$space.id, 
-                   weights = weight_preds)
+results <- gap_fill(Y.pred.1 = ctm.pred$estimate, 
+                    Y.pred.2 = ctm.pred$estimate_maia, 
+                    Y.sd.1 = ctm.pred$sd, 
+                    Y.sd.2 = ctm.pred$sd_maia, 
+                    space.id = ctm.pred$space.id, 
+                    weights = weight_preds)
 ```
