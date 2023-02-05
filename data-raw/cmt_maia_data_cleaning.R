@@ -26,10 +26,18 @@ ctm_pm25 <- merge(ctm_pm25,
                  monitor.locs.ctm, 
                  by.x = "Space_ID", 
                  by.y = "ID",
-                 all.x = T)
+                 all.x = T,
+                 sort = F)
 
 names(ctm_pm25) <- tolower(names(ctm_pm25))
 names(ctm_pm25) <- gsub("\\.", "_", names(ctm_pm25))
+
+ctm_pm25 <- ctm_pm25[, c(c("time_id", "space_id", "spacetime_id"), 
+                         names(ctm_pm25)[4:ncol(ctm_pm25)])]
+ctm_pm25 <- ctm_pm25[with(ctm_pm25, order(time_id, space_id, spacetime_id)), ]
+
+
+
 usethis::use_data(ctm_pm25, overwrite = TRUE)
 
 
@@ -58,11 +66,17 @@ maia_pm25 <- merge(maia_pm25,
                  monitor.locs.ctm, 
                  by.x = "Space_ID", 
                  by.y = "ID",
-                 all.x = T)
+                 all.x = T,
+                 sort = F)
 
 
 names(maia_pm25) <- tolower(names(maia_pm25))
 names(maia_pm25) <- gsub("\\.", "_", names(maia_pm25))
+
+maia_pm25 <- maia_pm25[, c(c("time_id", "space_id", "spacetime_id"), 
+                         names(maia_pm25)[4:ncol(maia_pm25)])]
+maia_pm25 <- maia_pm25[with(maia_pm25, order(time_id, space_id, spacetime_id)), ]
+
 usethis::use_data(maia_pm25, overwrite = TRUE)
 
 
@@ -87,11 +101,17 @@ ctm_preds <- merge(ctm_preds,
                  pred.locs.ctm, 
                  by.x = "Space_ID", 
                  by.y = "Cell",
-                 all.x = T)
+                 all.x = T,
+                 sort = F)
 
 
 names(ctm_preds) <- tolower(names(ctm_preds))
 names(ctm_preds) <- gsub("\\.", "_", names(ctm_preds))
+
+ctm_preds <- ctm_preds[, c(c("time_id", "space_id", "spacetime_id"), 
+                         names(ctm_preds)[4:ncol(ctm_preds)])]
+ctm_preds <- ctm_preds[with(ctm_preds, order(time_id, space_id, spacetime_id)), ]
+
 usethis::use_data(ctm_preds, overwrite = TRUE)
 
 
@@ -115,11 +135,16 @@ maia_preds <- merge(maia_preds,
                  pred.locs.maia, 
                  by.x = "Space_ID", 
                  by.y = "Cell",
-                 all.x = T)
+                 all.x = T,
+                 sort = F)
 
 
 names(maia_preds) <- tolower(names(maia_preds))
 names(maia_preds) <- gsub("\\.", "_", names(maia_preds))
+
+maia_preds <- maia_preds[, c(c("time_id", "space_id", "spacetime_id"), 
+                         names(maia_preds)[4:ncol(maia_preds)])]
+maia_preds <- maia_preds[with(maia_preds, order(time_id, space_id, spacetime_id)), ]
 
 
 usethis::use_data(maia_preds, overwrite = TRUE)
