@@ -18,7 +18,7 @@ ctm_pm25[, L_ctm_names] <- L.input.ctm[, L_ctm_names]
 M_ctm_names <- colnames(M.input.ctm)[4:ncol(M.input.ctm)]
 ctm_pm25[, M_ctm_names] <- M.input.ctm[, M_ctm_names]
 
-ctm_pm25$Date <- ctm.dateinfo$Date
+ctm_pm25$Date <- as.Date(ctm.dateinfo$Date)
 
 monitor.locs.ctm <- as.data.frame(monitor.locs.ctm)
 
@@ -58,7 +58,7 @@ maia_pm25[, L_maia_names] <- L.input.maia[, L_maia_names]
 M_maia_names <- colnames(M.input.maia)[4:ncol(M.input.maia)]
 maia_pm25[, M_maia_names] <- M.input.maia[, M_maia_names]
 
-maia_pm25$Date <- maia.dateinfo$Date
+maia_pm25$Date <- as.Date(maia.dateinfo$Date)
 
 monitor.locs.maia <- as.data.frame(monitor.locs.maia)
 
@@ -93,7 +93,8 @@ ctm_preds <- X.pred.ctm
 
 ctm_preds[, M_ctm_names] <- M.pred.ctm[, M_ctm_names]
 ctm_preds[, L_ctm_names] <- L.pred.ctm[, L_ctm_names]
-ctm_preds$Date <- ctm.dateinfo.pred$Date
+
+ctm_preds$Date <- as.Date(ctm.dateinfo.pred$Date)
 
 pred.locs.ctm <- as.data.frame(pred.locs.ctm)
 
@@ -112,6 +113,12 @@ ctm_preds <- ctm_preds[, c(c("time_id", "space_id", "spacetime_id"),
                          names(ctm_preds)[4:ncol(ctm_preds)])]
 ctm_preds <- ctm_preds[with(ctm_preds, order(time_id, space_id, spacetime_id)), ]
 
+#filter predictions for only June 2004 to save package memory. 
+#this month has a lot of missing aod and no missing ctm
+ctm_preds <- ctm_preds[ctm_preds$date < as.Date("2004-07-01") & 
+                       ctm_preds$date >= as.Date("2004-06-01"), ]
+
+
 usethis::use_data(ctm_preds, overwrite = TRUE)
 
 
@@ -127,7 +134,8 @@ maia_preds <- X.pred.maia
 
 maia_preds[, M_maia_names] <- M.pred.maia[, M_maia_names]
 maia_preds[, L_maia_names] <- L.pred.maia[, L_maia_names]
-maia_preds$Date <- maia.dateinfo.pred$Date
+
+maia_preds$Date <- as.Date(maia.dateinfo.pred$Date)
 
 pred.locs.maia <- as.data.frame(pred.locs.maia)
 
@@ -146,6 +154,10 @@ maia_preds <- maia_preds[, c(c("time_id", "space_id", "spacetime_id"),
                          names(maia_preds)[4:ncol(maia_preds)])]
 maia_preds <- maia_preds[with(maia_preds, order(time_id, space_id, spacetime_id)), ]
 
+#filter predictions for only June 2004 to save package memory. 
+#this month has a lot of missing aod and no missing ctm
+maia_preds <- maia_preds[maia_preds$date < as.Date("2004-07-01") & 
+                         maia_preds$date >= as.Date("2004-06-01"), ]
 
 usethis::use_data(maia_preds, overwrite = TRUE)
 
