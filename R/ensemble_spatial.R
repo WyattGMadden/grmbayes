@@ -4,7 +4,15 @@
 #'
 #' @inheritParams grm
 #
+#' @param grm.fit.cv.1 Output from grm_cv function for first primary variable
+#' @param grm.fit.cv.2 Output from grm_cv function for second primary variable
+#' @param date.Y.1 Date (or other unique day id) for first primary variable
+#' @param date.Y.2 Date (or other unique day id) for second primary variable
 #' @param d1 Vector of densities from first dataset grm_cv() output
+#' @param d2 Vector of densities from second dataset grm_cv() output
+#' @param coords.Y.1 Matrix of x y coordinates for first primary variable, with colnames(coords) == c("x", "y"), (n, 2)
+#' @param space.id.Y.1 Spatial location ID vector for first primary variable (n)
+#' @param space.id Spatial location ID vector (n)
 #' @param d2 Vector of densities from second dataset grm_cv() output
 #'
 #' @return A data frame containing cross validation predictions
@@ -16,9 +24,14 @@
 #' @export
 
 
-ensemble_spatial = function(d1, 
+ensemble_spatial = function(grm.fit.cv.1,
+                            grm.fit.cv.2,
+                            date.Y.1,
+                            date.Y.2,
+                            d1, 
                             d2, 
-                            dist.space.mat, 
+                            coords.Y.1,
+                            space.id.Y.1,
                             space.id, 
                             n.iter = 25000, 
                             burn = 5000, 
@@ -29,8 +42,49 @@ ensemble_spatial = function(d1,
                             theta.a = 5, 
                             theta.b = 0.05) {
   
+
+    grm.fit.cv.1$date <- date.Y.1
+    grm.fit.cv.2$date <- date.Y.2
+
+    # Remove NA's from the first and last time interval
+    grm.fit.cv.1 <- grm.fit.cv.1[!is.na(grm.fit.cv.1$estimate), ]
+    grm.fit.cv.2 <- grm.fit.cv.2[!is.na(grm.fit.cv.2$estimate), ]
+
+    # Use only first primary variable
+    # results with second primary variable observed
+    grm.fit.cv.1$link_id <- paste(grm.fit.cv.1$date, 
+                                  grm.fit.cv.1$space_id, 
+                                  sep = "_")
+    grm.fit.cv.2$link_id <- paste(grm.fit.cv.2$date, 
+                                  grm.fit.cv.2$space_id, 
+                                  sep = "_")
+    grm.fit.cv.1 <- grm.fit.cv.1[grm.fit.cv.1$link_id %in% grm.fit.cv.2$link_id, ]
+
+    grm.fit.cv.2$estimate_1 <- grm.fit.cv.1$estimate[match(grm.fit.cv.1$link_id, 
+                                                             grm.fit.cv.2$link_id)]
+    grm.fit.cv.2$sd_1 <- grm.fit.cv.1$sd[match(grm.fit.cv.1$link_id,
+                                                 grm.fit.cv.2$link_id)]
+
+    grm.fit.cv.2 <- grm.fit.cv.2[order(grm.fit.cv.2$space_id, 
+                                       grm.fit.cv.2$date), ]
+
+    # Calculate densities
+    d1 <- stats::dnorm(grm.fit.cv.2$obs, 
+                       grm.fit.cv.2$estimate_1, 
+                       grm.fit.cv.2$sd_1)
+    d2 <- stats::dnorm(grm.fit.cv.2$obs, 
+                       grm.fit.cv.2$estimate, 
+                       grm.fit.cv.2$sd)
+
     S = max(space.id)
     n = length(d1)
+
+    ###Create distance matrix
+    dist.space.mat <- unique(cbind(space.id.Y.1, coords.Y.1))
+    dist.space.mat <- dist.space.mat[order(dist.space.mat$space.id.Y.1), ]
+    dist.space.mat <- as.matrix(stats::dist(dist.space.mat[, c("x", "y")], 
+                                            diag = TRUE, 
+                                            upper = TRUE))
   
     ##Results to save
     #Total number of samples in the end

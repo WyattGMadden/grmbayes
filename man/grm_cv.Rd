@@ -10,7 +10,7 @@ grm_cv(
   L = NULL,
   M = NULL,
   num.folds = 10,
-  dist.space.mat,
+  coords,
   space.id,
   time.id,
   spacetime.id,
@@ -44,7 +44,7 @@ grm_cv(
 
 \item{num.folds}{Number of folds used in the cross validation process}
 
-\item{dist.space.mat}{Spatial distance matrix}
+\item{coords}{Matrix of x y coordinates, with colnames(coords) == c("x", "y"), (n, 2)}
 
 \item{space.id}{Spatial location ID vector (n)}
 

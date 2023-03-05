@@ -5,9 +5,14 @@
 \title{Fit the Spatial Ensemble model}
 \usage{
 ensemble_spatial(
+  grm.fit.cv.1,
+  grm.fit.cv.2,
+  date.Y.1,
+  date.Y.2,
   d1,
   d2,
-  dist.space.mat,
+  coords.Y.1,
+  space.id.Y.1,
   space.id,
   n.iter = 25000,
   burn = 5000,
@@ -20,11 +25,21 @@ ensemble_spatial(
 )
 }
 \arguments{
+\item{grm.fit.cv.1}{Output from grm_cv function for first primary variable}
+
+\item{grm.fit.cv.2}{Output from grm_cv function for second primary variable}
+
+\item{date.Y.1}{Date (or other unique day id) for first primary variable}
+
+\item{date.Y.2}{Date (or other unique day id) for second primary variable}
+
 \item{d1}{Vector of densities from first dataset grm_cv() output}
 
 \item{d2}{Vector of densities from second dataset grm_cv() output}
 
-\item{dist.space.mat}{Spatial distance matrix}
+\item{coords.Y.1}{Matrix of x y coordinates for first primary variable, with colnames(coords) == c("x", "y"), (n, 2)}
+
+\item{space.id.Y.1}{Spatial location ID vector for first primary variable (n)}
 
 \item{space.id}{Spatial location ID vector (n)}
 

@@ -4,16 +4,16 @@
 \alias{gap_fill}
 \title{Make predictions for locations with two observations}
 \usage{
-gap_fill(Y.pred.1, Y.pred.2, Y.sd.1, Y.sd.2, space.id, weights)
+gap_fill(grm.pred.1, grm.pred.2, date.pred.1, date.pred.2, space.id, weights)
 }
 \arguments{
-\item{Y.pred.1}{Predictions made with grm_pred and first primary independent variable}
+\item{grm.pred.1}{Output from grm_pred() function for first primary variable}
 
-\item{Y.pred.2}{Predictions made with grm_pred and second primary independent variable}
+\item{grm.pred.2}{Output from grm_pred() function for second primary variable}
 
-\item{Y.sd.1}{Prediction standard deviation output from grm_pred and first primary independent variable}
+\item{date.pred.1}{Date (or other unique day identifier) from first variable prediction dataset}
 
-\item{Y.sd.2}{Prediction standard deviation output from grm_pred and second primary independent variable}
+\item{date.pred.2}{Date (or other unique day identifier) from second variable prediction dataset}
 
 \item{space.id}{Spatial location ID vector (n)}
 

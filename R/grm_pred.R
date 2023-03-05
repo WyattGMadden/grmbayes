@@ -7,8 +7,9 @@
 #' @param X.pred Standardized primary independent variable vector for all predictions (n_pred)
 #' @param L.pred Standardized spatial covariate matrix for all predictions (n_pred, p1)
 #' @param M.pred Standardized spatio-temporal covariate matrix for all predictions (n_pred, p2)
-#' @param locations.Y Matrix of primary independent variable x, y coodinates (n_obs, 2)
-#' @param locations.pred Matrix of prediction x, y coodinates (n_pred, 2)
+#' @param coords.Y Matrix of primary independent variable x, y coodinates (n_obs, 2)
+#' @param space.id.Y Vector of space id numbers for primary variables, corresponding with coords.Y (n_obs)
+#' @param coords.pred Matrix of prediction x, y coodinates (n_pred, 2)
 #'
 #' @return A data frame containing grm predictions
 #'
@@ -22,8 +23,9 @@ grm_pred = function(grm.fit,
                     X.pred, 
                     L.pred, 
                     M.pred, 
-                    locations.Y, 
-                    locations.pred, 
+                    coords.Y, 
+                    space.id.Y,
+                    coords.pred, 
                     space.id, 
                     time.id, 
                     spacetime.id, 
@@ -43,6 +45,17 @@ grm_pred = function(grm.fit,
   
   N.Lmax = ncol(L.pred) #Number of spatial predictors to use
   N.Mmax = ncol(M.pred) #Number of spatial-temporal predictors to use
+
+  ############################
+  ###standardize X, L and M###
+  ############################
+  X.pred = scale(X.pred)
+  L.pred = as.matrix(L.pred)
+  M.pred = as.matrix(M.pred)
+  L.pred = apply(X = L.pred, MARGIN = 2, FUN = scale)
+  M.pred = apply(X = M.pred, MARGIN = 2, FUN = scale)
+  
+
   
   if (verbose == TRUE) {
       cat("####################################\n")
@@ -63,6 +76,15 @@ grm_pred = function(grm.fit,
                    "\n"))
   }
   
+  ###Create prediction distance matrix
+  dist_dat_Y <- unique(cbind(space.id.Y, coords.Y))
+  dist_dat_Y <- dist_dat_Y[order(dist_dat_Y$space.id.Y), ]
+  locations.Y <- dist_dat_Y[, c("x", "y")]
+
+  dist_dat_pred <- unique(cbind(space.id, coords.pred))
+  dist_dat_pred <- dist_dat_pred[order(dist_dat_pred$space.id), ]
+  locations.pred <- dist_dat_pred[, c("x", "y")]
+
   N.mon = nrow(locations.Y)
   N.cell = nrow(locations.pred)
   

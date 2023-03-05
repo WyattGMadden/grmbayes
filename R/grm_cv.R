@@ -17,7 +17,7 @@ grm_cv = function(Y,
                   L = NULL, 
                   M = NULL, 
                   num.folds = 10,
-                  dist.space.mat, 
+                  coords,
                   space.id, 
                   time.id, 
                   spacetime.id,
@@ -70,8 +70,10 @@ grm_cv = function(Y,
         X.test = X[CV.id == CV.i]
     
         #Subset of L matrix based on variable s
+        L = as.matrix(L)
         L.train = L[CV.id != CV.i, , drop = FALSE]
         L.test = L[CV.id == CV.i, , drop = FALSE]
+        M = as.matrix(M)
         M.train = M[CV.id != CV.i, , drop = FALSE]
         M.test = M[CV.id == CV.i, , drop = FALSE]
     
@@ -81,12 +83,13 @@ grm_cv = function(Y,
         Space_ID.test = space.id[CV.id == CV.i]
         SpaceTime_ID.train = spacetime.id[CV.id != CV.i]
         SpaceTime_ID.test = spacetime.id[CV.id == CV.i]
+        coords.train = coords[CV.id != CV.i, ]
     
         fit.cv = grm(Y = Y.train, 
                      X = X.train, 
                      L = L.train, 
                      M = M.train, 
-                     dist.space.mat = dist.space.mat, 
+                     coords = coords.train,
                      space.id = Space_ID.train, 
                      time.id = Time_ID.train, 
                      spacetime.id = SpaceTime_ID.train, 

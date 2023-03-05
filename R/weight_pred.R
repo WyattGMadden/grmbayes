@@ -3,25 +3,41 @@
 #'
 #' This function generates weights using the output from the ensemble_spatial function
 #'
-#' @inheritParams grm_pred
-#' @param q Matrix of samples output from ensemble_spatial function
-#' @param theta Vector of theta samples output from ensemble_spatial function
-#' @param tau2 Vector of tau2 samples output from ensemble_spatial function
+#' @inheritParams grm
+#'
+#' @param ensemble.fit Fit from ensemble_spatial() function
+#' @param coords.Y.1 Coordinate matrix for first primary variable
+#' @param space.id.Y.1 Space id for first primary variable 
+#' @param coords.pred.1 Coordinate matrix for first variable predictions
+#' @param space.id.pred.1 Space id for first primary variable predictions
 #'
 #' @return A matrix containing weights
 #'
 #' @examples
-#' # grm_pred()
+#' # weight_preds()
 #' 
 #' 
 #' @export
 
-weight_pred = function(q, 
-                       theta, 
-                       tau2, 
-                       locations.Y, 
-                       locations.pred, 
+weight_pred = function(ensemble.fit, 
+                       coords.Y.1,
+                       space.id.Y.1,
+                       coords.pred.1,
+                       space.id.pred.1,
                        verbose = TRUE) {
+
+    q = ensemble.fit$q
+    theta = ensemble.fit$other$theta
+    tau2 = ensemble.fit$other$tau2
+
+    #Create unique location matrices
+    locations.Y <- unique(cbind(coords.Y.1, space.id.Y.1))
+    locations.Y <- locations.Y[order(locations.Y$space.id.Y), ]
+    locations.Y <- locations.Y[, c("x", "y")]
+
+    locations.pred <- unique(cbind(coords.pred.1, space.id.pred.1))
+    locations.pred <- locations.pred[order(locations.pred$space.id.pred.1), ]
+    locations.pred <- locations.pred[, c("x", "y")]
 
     n.iter = length(theta)
   
@@ -33,7 +49,7 @@ weight_pred = function(q,
     N.cell = nrow(locations.pred)
   
     XY = rbind(locations.Y, 
-               locations.pred)[, -1]
+               locations.pred)
     D22 = as.matrix(stats::dist(locations.Y, 
                                 diag = TRUE, 
                                 upper = TRUE))

@@ -9,7 +9,7 @@ grm(
   X,
   L = NULL,
   M = NULL,
-  dist.space.mat,
+  coords,
   space.id,
   time.id,
   spacetime.id,
@@ -41,7 +41,7 @@ grm(
 
 \item{M}{Unstandardized spatio-temporal covariate matrix (n, p2)}
 
-\item{dist.space.mat}{Spatial distance matrix}
+\item{coords}{Matrix of x y coordinates, with colnames(coords) == c("x", "y"), (n, 2)}
 
 \item{space.id}{Spatial location ID vector (n)}
 

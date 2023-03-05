@@ -7,7 +7,7 @@
 #' @param X Unstandardized primary independent variable vector (n)
 #' @param L Unstandardized spatial covariate matrix (n, p1)
 #' @param M Unstandardized spatio-temporal covariate matrix (n, p2)
-#' @param dist.space.mat Spatial distance matrix 
+#' @param coords Matrix of x y coordinates, with colnames(coords) == c("x", "y"), (n, 2)
 #' @param space.id Spatial location ID vector (n)
 #' @param time.id Temporal location ID vector (n)
 #' @param spacetime.id ID vector of time points where spatial trends vary (n)
@@ -40,7 +40,7 @@ grm = function(Y,
                X, 
                L = NULL, 
                M = NULL, 
-               dist.space.mat, 
+               coords, 
                space.id, 
                time.id, 
                spacetime.id,
@@ -100,6 +100,8 @@ grm = function(Y,
     ##############################
     ### Standardize X, L and M ###
     ##############################
+    L = as.matrix(L)
+    M = as.matrix(M)
     
     ### Calculate means and standard deviation
     X.mean = mean(X)
@@ -119,6 +121,18 @@ grm = function(Y,
     if (!is.null(L) & !any(L.sd == 0)) {
         L = sweep(sweep(L, 2, L.mean, "-"), 2, L.sd, "/") 
     }
+
+    ######################################
+    ### Create Spatial Distance Matrix ###
+    ######################################
+
+
+    dist.space.mat <- unique(cbind(space.id, coords))
+    dist.space.mat <- dist.space.mat[order(dist.space.mat$space.id), ]
+    dist.space.mat <- as.matrix(stats::dist(dist.space.mat[, c("x", "y")], 
+                                            diag = TRUE, 
+                                            upper = TRUE))
+
     
     #######################################
     ### Create Temporal Distance Matrix ###

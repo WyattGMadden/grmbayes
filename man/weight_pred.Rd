@@ -4,18 +4,25 @@
 \alias{weight_pred}
 \title{Generate weights from ensemble spatial fit}
 \usage{
-weight_pred(q, theta, tau2, locations.Y, locations.pred, verbose = TRUE)
+weight_pred(
+  ensemble.fit,
+  coords.Y.1,
+  space.id.Y.1,
+  coords.pred.1,
+  space.id.pred.1,
+  verbose = TRUE
+)
 }
 \arguments{
-\item{q}{Matrix of samples output from ensemble_spatial function}
+\item{ensemble.fit}{Fit from ensemble_spatial() function}
 
-\item{theta}{Vector of theta samples output from ensemble_spatial function}
+\item{coords.Y.1}{Coordinate matrix for first primary variable}
 
-\item{tau2}{Vector of tau2 samples output from ensemble_spatial function}
+\item{space.id.Y.1}{Space id for first primary variable}
 
-\item{locations.Y}{Matrix of primary independent variable x, y coodinates (n_obs, 2)}
+\item{coords.pred.1}{Coordinate matrix for first variable predictions}
 
-\item{locations.pred}{Matrix of prediction x, y coodinates (n_pred, 2)}
+\item{space.id.pred.1}{Space id for first primary variable predictions}
 
 \item{verbose}{Print MCMC output}
 }
@@ -26,7 +33,7 @@ A matrix containing weights
 This function generates weights using the output from the ensemble_spatial function
 }
 \examples{
-# grm_pred()
+# weight_preds()
 
 
 }

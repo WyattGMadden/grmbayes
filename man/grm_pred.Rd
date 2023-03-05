@@ -9,8 +9,9 @@ grm_pred(
   X.pred,
   L.pred,
   M.pred,
-  locations.Y,
-  locations.pred,
+  coords.Y,
+  space.id.Y,
+  coords.pred,
   space.id,
   time.id,
   spacetime.id,
@@ -29,9 +30,11 @@ grm_pred(
 
 \item{M.pred}{Standardized spatio-temporal covariate matrix for all predictions (n_pred, p2)}
 
-\item{locations.Y}{Matrix of primary independent variable x, y coodinates (n_obs, 2)}
+\item{coords.Y}{Matrix of primary independent variable x, y coodinates (n_obs, 2)}
 
-\item{locations.pred}{Matrix of prediction x, y coodinates (n_pred, 2)}
+\item{space.id.Y}{Vector of space id numbers for primary variables, corresponding with coords.Y (n_obs)}
+
+\item{coords.pred}{Matrix of prediction x, y coodinates (n_pred, 2)}
 
 \item{space.id}{Spatial location ID vector (n)}
 
