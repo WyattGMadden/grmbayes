@@ -10,7 +10,6 @@
 #' @param date.Y.2 Date (or other unique day id) for second primary variable
 #' @param coords.Y.1 Matrix of x y coordinates for first primary variable, with colnames(coords) == c("x", "y"), (n, 2)
 #' @param space.id.Y.1 Spatial location ID vector for first primary variable (n)
-#' @param d2 Vector of densities from second dataset grm_cv() output
 #'
 #' @return A data frame containing cross validation predictions
 #'

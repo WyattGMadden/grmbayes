@@ -9,11 +9,8 @@ ensemble_spatial(
   grm.fit.cv.2,
   date.Y.1,
   date.Y.2,
-  d1,
-  d2,
   coords.Y.1,
   space.id.Y.1,
-  space.id,
   n.iter = 25000,
   burn = 5000,
   thin = 4,
@@ -33,15 +30,9 @@ ensemble_spatial(
 
 \item{date.Y.2}{Date (or other unique day id) for second primary variable}
 
-\item{d1}{Vector of densities from first dataset grm_cv() output}
-
-\item{d2}{Vector of densities from second dataset grm_cv() output}
-
 \item{coords.Y.1}{Matrix of x y coordinates for first primary variable, with colnames(coords) == c("x", "y"), (n, 2)}
 
 \item{space.id.Y.1}{Spatial location ID vector for first primary variable (n)}
-
-\item{space.id}{Spatial location ID vector (n)}
 
 \item{n.iter}{Number of iterations used in predictions. Must be <= than post-thined and burned iterations from grm.fit}
 
