@@ -8,11 +8,8 @@
 #' @param grm.fit.cv.2 Output from grm_cv function for second primary variable
 #' @param date.Y.1 Date (or other unique day id) for first primary variable
 #' @param date.Y.2 Date (or other unique day id) for second primary variable
-#' @param d1 Vector of densities from first dataset grm_cv() output
-#' @param d2 Vector of densities from second dataset grm_cv() output
 #' @param coords.Y.1 Matrix of x y coordinates for first primary variable, with colnames(coords) == c("x", "y"), (n, 2)
 #' @param space.id.Y.1 Spatial location ID vector for first primary variable (n)
-#' @param space.id Spatial location ID vector (n)
 #' @param d2 Vector of densities from second dataset grm_cv() output
 #'
 #' @return A data frame containing cross validation predictions
@@ -28,11 +25,8 @@ ensemble_spatial = function(grm.fit.cv.1,
                             grm.fit.cv.2,
                             date.Y.1,
                             date.Y.2,
-                            d1, 
-                            d2, 
                             coords.Y.1,
                             space.id.Y.1,
-                            space.id, 
                             n.iter = 25000, 
                             burn = 5000, 
                             thin = 4,
@@ -76,7 +70,7 @@ ensemble_spatial = function(grm.fit.cv.1,
                        grm.fit.cv.2$estimate, 
                        grm.fit.cv.2$sd)
 
-    S = max(space.id)
+    S = max(grm.fit.cv.2$space_id)
     n = length(d1)
 
     ###Create distance matrix
@@ -111,12 +105,12 @@ ensemble_spatial = function(grm.fit.cv.1,
         }
  
         ##Update log-odds q
-        m = q[space.id]
+        m = q[grm.fit.cv.2$space_id]
         omega = BayesLogit::rpg.devroye(n, 1, m)
     
-        O = diag(tapply(omega, space.id, sum))
+        O = diag(tapply(omega, grm.fit.cv.2$space_id, sum))
         VVV = solve(O + solve(Sigma))
-        MMM = VVV %*% (tapply(z - 0.5, space.id, sum))  
+        MMM = VVV %*% (tapply(z - 0.5, grm.fit.cv.2$space_id, sum))  
         q = MASS::mvrnorm(1, MMM, VVV)
     
         #update tau
@@ -145,7 +139,7 @@ ensemble_spatial = function(grm.fit.cv.1,
         }
     
         ##Update indicator z
-        w = 1 / (1 + exp(-q))[space.id]
+        w = 1 / (1 + exp(-q))[grm.fit.cv.2$space_id]
         p = w * d1 / (w * d1 + (1 - w) * d2)
         z = stats::rbinom(n, 1, p)
     

@@ -139,15 +139,13 @@ maia_pred <- grm_pred(grm.fit = maia_fit,
 
 ``` r
 
+maia_fit_cv
 ensemble_fit <- ensemble_spatial(grm.fit.cv.1 = ctm_fit_cv,
                                  grm.fit.cv.2 = maia_fit_cv,
                                  date.Y.1 = ctm_pm25$date,
                                  date.Y.2 = maia_pm25$date,
-                                 d1 = d1, 
-                                 d2 = d2, 
                                  coords.Y.1 = ctm_pm25[, c("x", "y")],
                                  space.id.Y.1 = ctm_pm25$space_id,
-                                 space.id = maia_input$space_id, 
                                  n.iter = 5000, 
                                  burn = 1000, 
                                  thin = 4,
