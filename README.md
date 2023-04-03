@@ -53,6 +53,7 @@ cv_id_ctm_spcl <- create_cv(space.id = ctm_pm25$space_id,
                        type = "spatial_clustered",
                        coords = ctm_pm25[, c("x", "y")])
 
+
 # library(tidyverse)
 # tibble(x = ctm_pm25$x, y = ctm_pm25$y, cv_id = cv_id_ctm_spat$cv_id, type = "spat") %>%
 # rbind(tibble(x = ctm_pm25$x, y = ctm_pm25$y, cv_id = cv_id_ctm_ord$cv_id, type = "ord")) %>%
@@ -67,6 +68,7 @@ cv_id_ctm_spcl <- create_cv(space.id = ctm_pm25$space_id,
 
 ctm_fit_cv <- grm_cv(Y = ctm_pm25$pm25,
                      X = ctm_pm25$pm25,
+                     cv.object = cv_id_ctm_ord,
                      L = ctm_pm25[, c("elevation", "forestcover",
                                       "hwy_length", "lim_hwy_length", 
                                       "local_rd_length", "point_emi_any")],
@@ -82,6 +84,9 @@ ctm_fit_cv <- grm_cv(Y = ctm_pm25$pm25,
 
 ?maia_pm25
 
+cv_id_maia_ord <- create_cv(space.id = maia_pm25$space_id,
+                            time.id = maia_pm25$time_id,
+                            type = "ordinary")
 
 maia_fit <- grm(Y = maia_pm25$pm25,
                 X = maia_pm25$aod,
@@ -100,6 +105,7 @@ maia_fit <- grm(Y = maia_pm25$pm25,
 
 maia_fit_cv <- grm_cv(Y = maia_pm25$pm25,
                       X = maia_pm25$aod,
+                      cv.object = cv_id_maia_ord,
                       L = maia_pm25[, c("elevation", "forestcover",
                                         "hwy_length", "lim_hwy_length", 
                                         "local_rd_length", "point_emi_any")],

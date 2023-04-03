@@ -7,9 +7,9 @@
 grm_cv(
   Y,
   X,
+  cv.object,
   L = NULL,
   M = NULL,
-  num.folds = 10,
   coords,
   space.id,
   time.id,
@@ -38,11 +38,11 @@ grm_cv(
 
 \item{X}{Unstandardized primary independent variable vector (n)}
 
+\item{cv.object}{A named list containing cv.id, num.folds, and type. Can be created with create_cv function.}
+
 \item{L}{Unstandardized spatial covariate matrix (n, p1)}
 
 \item{M}{Unstandardized spatio-temporal covariate matrix (n, p2)}
-
-\item{num.folds}{Number of folds used in the cross validation process}
 
 \item{coords}{Matrix of x y coordinates, with colnames(coords) == c("x", "y"), (n, 2)}
 
