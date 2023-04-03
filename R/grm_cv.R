@@ -2,7 +2,7 @@
 #'
 #' This function fits Bayesian Hierarchical Model (BHM) in the form of Y ~ beta X + gamma L + delta M with cross-validation
 #'
-#' @inheritParams grm
+#' @inheritParams grm_pred
 #' @param cv.object A named list containing cv.id, num.folds, and type. Can be created with create_cv function. 
 #'
 #' @return A data frame containing cross validation predictions
@@ -39,48 +39,48 @@ grm_cv = function(Y,
                   sigma.b = 0.001,
                   verbose = TRUE) {
 
-    CV.id <- cv.object$cv.id
-    num.folds <- cv.object$num.folds
+    cv.id <- cv.object$cv.id
 
-    Y.CV = data.frame(time_id = time.id, 
+    Y.cv = data.frame(time_id = time.id, 
                       space_id = space.id, 
                       obs = Y, 
                       estimate = NA, 
                       sd = NA)
   
   
-    for (CV.i in 1:num.folds) {
+    for (cv.i in 1:cv.object$num.folds) {
     
-        print(paste0("Performing CV Experiment ---- Fold ", CV.i))
-        Y.train = Y[CV.id != CV.i]
-        Y.test = Y[CV.id == CV.i]
-        X.train = X[CV.id != CV.i]
-        X.test = X[CV.id == CV.i]
+        print(paste0("Performing CV Experiment ---- Fold ", cv.i))
+        Y.train = Y[cv.id != cv.i]
+        Y.test = Y[cv.id == cv.i]
+        X.train = X[cv.id != cv.i]
+        X.test = X[cv.id == cv.i]
     
         #Subset of L matrix based on variable s
         L = as.matrix(L)
-        L.train = L[CV.id != CV.i, , drop = FALSE]
-        L.test = L[CV.id == CV.i, , drop = FALSE]
+        L.train = L[cv.id != cv.i, , drop = FALSE]
+        L.test = L[cv.id == cv.i, , drop = FALSE]
         M = as.matrix(M)
-        M.train = M[CV.id != CV.i, , drop = FALSE]
-        M.test = M[CV.id == CV.i, , drop = FALSE]
+        M.train = M[cv.id != cv.i, , drop = FALSE]
+        M.test = M[cv.id == cv.i, , drop = FALSE]
     
-        Time_ID.train = time.id[CV.id != CV.i]
-        Time_ID.test = time.id[CV.id == CV.i]
-        Space_ID.train = space.id[CV.id != CV.i]
-        Space_ID.test = space.id[CV.id == CV.i]
-        SpaceTime_ID.train = spacetime.id[CV.id != CV.i]
-        SpaceTime_ID.test = spacetime.id[CV.id == CV.i]
-        coords.train = coords[CV.id != CV.i, ]
+        time.id.train = time.id[cv.id != cv.i]
+        time.id.test = time.id[cv.id == cv.i]
+        space.id.train = space.id[cv.id != cv.i]
+        space.id.test = space.id[cv.id == cv.i]
+        spacetime.id.train = spacetime.id[cv.id != cv.i]
+        spacetime.id.test = spacetime.id[cv.id == cv.i]
+        coords.train = coords[cv.id != cv.i, ]
+        coords.test = coords[cv.id == cv.i, ]
     
         fit.cv = grm(Y = Y.train, 
                      X = X.train, 
                      L = L.train, 
                      M = M.train, 
                      coords = coords.train,
-                     space.id = Space_ID.train, 
-                     time.id = Time_ID.train, 
-                     spacetime.id = SpaceTime_ID.train, 
+                     space.id = space.id.train, 
+                     time.id = time.id.train, 
+                     spacetime.id = spacetime.id.train, 
                      include.additive.weekly.resid = include.additive.weekly.resid,
                      include.additive.annual.resid = include.additive.annual.resid,
                      include.multiplicative.weekly.resid = include.multiplicative.weekly.resid,
@@ -99,73 +99,42 @@ grm_cv = function(Y,
                      sigma.b = sigma.b,
                      verbose = verbose)
     
-        #Standardize
-        standardize.param = fit.cv$standardize.param
-    
-        X.test = (X.test - standardize.param[standardize.param$Type == "X", ]$Mean) / 
-            standardize.param[standardize.param$Type == "X", ]$SD
-    
-        L.var = as.character(standardize.param[standardize.param$Type == "L", ]$Name)
+        in_sample <- if (cv.object$type == "ordinary") {
 
-        for (l in L.var) {
-            L.test[, colnames(L.test) == l] = (L.test[, colnames(L.test) == l] - 
-                                               standardize.param[standardize.param$Name == l, ]$Mean) / 
-            standardize.param[standardize.param$Name == l, ]$SD
-    }
-    
-    M.var = as.character(standardize.param[standardize.param$Type == "M", ]$Name)
+            TRUE
 
-    for (m in M.var) {
-        M.test[, colnames(M.test) == m] = (M.test[, colnames(M.test) == m] - 
-                                           standardize.param[standardize.param$Name == m, ]$Mean) / 
-        standardize.param[standardize.param$Name == m, ]$SD
-    }
-    ##Make predictions
-    CV.Results = data.frame(Time_ID = time.id[CV.id == CV.i],
-                            Space_ID = space.id[CV.id == CV.i],
-                            SpaceTime_ID = spacetime.id[CV.id == CV.i])
-    CV.Results$Estimate = 0
-    CV.Results$SD = 0
-    
-    id.temp.train = paste0(fit.cv$alpha.space$space.id, 
-                           "_", 
-                           fit.cv$alpha.space$spacetime.id)
+        } else if (cv.object$type %in% c("spatial", "spatial_clustered")) {
 
-    id.temp = paste0(Space_ID.test, 
-                     "_", 
-                     SpaceTime_ID.test)
-    
-    others = fit.cv$others
-    delta = as.matrix(fit.cv$delta)
-    gamma = as.matrix(fit.cv$gamma)
-    
-    for (m in 1:nrow(delta)) {
-        intercept = others$alpha0[m] + 
-            fit.cv$alpha.time[Time_ID.test, m + 1] + 
-            fit.cv$alpha.space[match(id.temp, id.temp.train), m + 2]
-        slope = others$beta0[m] + 
-            fit.cv$beta.time[Time_ID.test, m+1] + 
-            fit.cv$beta.space[match(id.temp, id.temp.train), m + 2]
-        fix.L = L.test %*% gamma[m, ]
-        fix.M = M.test %*% delta[m, ]
-      
-        pred.mu = intercept + slope * X.test + fix.L + fix.M
-        pred.mu = pred.mu + stats::rnorm(length(pred.mu), 0, sqrt(others$sigma2[m])) 
-      
-        CV.Results$Estimate = CV.Results$Estimate + pred.mu / nrow(delta)
-        CV.Results$SD = CV.Results$SD + pred.mu ^ 2 / nrow(delta)
-    }
+            FALSE
 
-    CV.Results$SD = sqrt((CV.Results$SD - CV.Results$Estimate ^ 2))
+        } else {
 
-    
-    Y.CV$estimate[CV.id == CV.i] = CV.Results$Estimate
-    Y.CV$sd[CV.id == CV.i] = CV.Results$SD
+            stop("cv.object$type must be either 'ordinary', 'spatial', or 'spatial_clustered'")
+
+        }
+
+        cv.results = grm_pred(grm.fit = fit.cv, 
+                              n.iter = (n.iter - burn) / thin,
+                              X.pred = X.test, 
+                              L.pred = L.test, 
+                              M.pred = M.test, 
+                              coords.Y = coords.train,
+                              coords.pred = coords.test,
+                              space.id = space.id.test, 
+                              space.id.Y = space.id.train, 
+                              time.id = time.id.test, 
+                              spacetime.id = spacetime.id.test,
+                              in.sample = in_sample)
+
+
+
+        Y.cv$estimate[cv.id == cv.i] = cv.results$estimate
+        Y.cv$sd[cv.id == cv.i] = cv.results$sd
 
     }
  
-    Y.CV$upper_95 = Y.CV$estimate + 1.96 * Y.CV$sd
-    Y.CV$lower_95 = Y.CV$estimate - 1.96 * Y.CV$sd
+    Y.cv$upper_95 = Y.cv$estimate + 1.96 * Y.cv$sd
+    Y.cv$lower_95 = Y.cv$estimate - 1.96 * Y.cv$sd
   
-    return(Y.CV)
+    return(Y.cv)
 }
