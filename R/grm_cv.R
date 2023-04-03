@@ -3,7 +3,7 @@
 #' This function fits Bayesian Hierarchical Model (BHM) in the form of Y ~ beta X + gamma L + delta M with cross-validation
 #'
 #' @inheritParams grm
-#' @param num.folds Number of folds used in the cross validation process
+#' @param cv.object A named list containing cv.id, num.folds, and type. Can be created with create_cv function. 
 #'
 #' @return A data frame containing cross validation predictions
 #'
@@ -14,9 +14,9 @@
 #' @export
 grm_cv = function(Y, 
                   X, 
+                  cv.object,
                   L = NULL, 
                   M = NULL, 
-                  num.folds = 10,
                   coords,
                   space.id, 
                   time.id, 
@@ -39,27 +39,15 @@ grm_cv = function(Y,
                   sigma.b = 0.001,
                   verbose = TRUE) {
 
-    CV.id = rep(NA, length(Y))
+    CV.id <- cv.object$cv.id
+    num.folds <- cv.object$num.folds
+
     Y.CV = data.frame(time_id = time.id, 
                       space_id = space.id, 
                       obs = Y, 
                       estimate = NA, 
                       sd = NA)
   
-    for (i in 1:max(space.id)) {
-        U = sample(1:10, 
-                   sum(space.id == i), 
-                   prob = rep(1 / 10, 10), 
-                   replace = TRUE)
-    
-        #Make sure no spatial location is dropped entirely
-        if (length(unique(U)) == 1) U = U * 0
-        CV.id[space.id == i] = U
-    
-        #Don't drop data on the first and last day
-        CV.id[time.id == 1] = 0
-        CV.id[time.id == max(time.id)] = 0
-    }
   
     for (CV.i in 1:num.folds) {
     

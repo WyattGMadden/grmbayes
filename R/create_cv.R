@@ -87,7 +87,7 @@ create_cv <- function(space.id,
 
     cv_id_full <- c(rep(0, time_obs_1), cv_id, rep(0, time_obs_max))
 
-    return(list(cv_id = cv_id_full, 
+    return(list(cv.id = cv_id_full, 
                 num.folds = num.folds, 
                 type = type))
 }
