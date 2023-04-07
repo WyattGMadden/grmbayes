@@ -2,7 +2,7 @@
 % Please edit documentation in R/grm_pred.R
 \name{grm_pred}
 \alias{grm_pred}
-\title{Fit the Geostatistical Regression Model (GRM) With Cross Validation}
+\title{Make Predictions With Geostatistical Regression Model (GRM)}
 \usage{
 grm_pred(
   grm.fit,
@@ -18,7 +18,8 @@ grm_pred(
   include.additive.annual.resid = T,
   include.multiplicative.annual.resid = T,
   n.iter = 500,
-  verbose = TRUE
+  verbose = TRUE,
+  in.sample = FALSE
 )
 }
 \arguments{
@@ -49,12 +50,14 @@ grm_pred(
 \item{n.iter}{Number of iterations used in predictions. Must be <= than post-thined and burned iterations from grm.fit}
 
 \item{verbose}{Print MCMC output}
+
+\item{in.sample}{False if predictions are being made at locations without observations in grm.fit (default is False)}
 }
 \value{
 A data frame containing grm predictions
 }
 \description{
-This function fits Bayesian Hierarchical Model (BHM) in the form of Y ~ beta X + gamma L + delta M with cross-validation
+This function makes predictions using a Bayesian Hierarchical Model (BHM) previously fit with grm()
 }
 \examples{
 # grm_pred()

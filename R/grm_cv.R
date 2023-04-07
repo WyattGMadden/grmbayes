@@ -3,6 +3,7 @@
 #' This function fits Bayesian Hierarchical Model (BHM) in the form of Y ~ beta X + gamma L + delta M with cross-validation
 #'
 #' @inheritParams grm_pred
+#' @inheritParams grm
 #' @param cv.object A named list containing cv.id, num.folds, and type. Can be created with create_cv function. 
 #'
 #' @return A data frame containing cross validation predictions
@@ -51,34 +52,45 @@ grm_cv = function(Y,
     for (cv.i in 1:cv.object$num.folds) {
     
         print(paste0("Performing CV Experiment ---- Fold ", cv.i))
-        Y.train = Y[cv.id != cv.i]
+        Y.train = Y[cv.id != cv.i & cv.id != 0]
         Y.test = Y[cv.id == cv.i]
-        X.train = X[cv.id != cv.i]
+
+        X.train = X[cv.id != cv.i & cv.id != 0]
         X.test = X[cv.id == cv.i]
     
         #Subset of L matrix based on variable s
         L = as.matrix(L)
-        L.train = L[cv.id != cv.i, , drop = FALSE]
+        L.train = L[cv.id != cv.i & cv.id != 0, , drop = FALSE]
         L.test = L[cv.id == cv.i, , drop = FALSE]
         M = as.matrix(M)
-        M.train = M[cv.id != cv.i, , drop = FALSE]
+        M.train = M[cv.id != cv.i & cv.id != 0, , drop = FALSE]
         M.test = M[cv.id == cv.i, , drop = FALSE]
     
-        time.id.train = time.id[cv.id != cv.i]
+        time.id.train = time.id[cv.id != cv.i & cv.id != 0]
         time.id.test = time.id[cv.id == cv.i]
-        space.id.train = space.id[cv.id != cv.i]
+        space.id.train = space.id[cv.id != cv.i & cv.id != 0]
         space.id.test = space.id[cv.id == cv.i]
-        spacetime.id.train = spacetime.id[cv.id != cv.i]
+
+        #grm requires space.id to be from 1:max(space_id)
+        #spatial cross validation breaks this assumption (missing space_id values)
+        #here we create temporary space.id values that are from 1:length(unique(space.id))
+        space.id.train.key = sort(unique(space.id.train))
+        space.id.test.key = sort(unique(space.id.test))
+        space.id.train.temp = sapply(space.id.train, 
+                                     function(x) which(space.id.train.key == x))
+        space.id.test.temp = sapply(space.id.test,
+                                    function(x) which(space.id.test.key == x))
+        spacetime.id.train = spacetime.id[cv.id != cv.i & cv.id != 0]
         spacetime.id.test = spacetime.id[cv.id == cv.i]
-        coords.train = coords[cv.id != cv.i, ]
+        coords.train = coords[cv.id != cv.i & cv.id != 0, ]
         coords.test = coords[cv.id == cv.i, ]
-    
+   
         fit.cv = grm(Y = Y.train, 
                      X = X.train, 
                      L = L.train, 
                      M = M.train, 
                      coords = coords.train,
-                     space.id = space.id.train, 
+                     space.id = space.id.train.temp, 
                      time.id = time.id.train, 
                      spacetime.id = spacetime.id.train, 
                      include.additive.weekly.resid = include.additive.weekly.resid,
@@ -113,6 +125,7 @@ grm_cv = function(Y,
 
         }
 
+
         cv.results = grm_pred(grm.fit = fit.cv, 
                               n.iter = (n.iter - burn) / thin,
                               X.pred = X.test, 
@@ -120,9 +133,9 @@ grm_cv = function(Y,
                               M.pred = M.test, 
                               coords.Y = coords.train,
                               coords.pred = coords.test,
-                              space.id = space.id.test, 
-                              space.id.Y = space.id.train, 
-                              time.id = time.id.test, 
+                              space.id = space.id.test.temp,
+                              space.id.Y = space.id.train.temp,
+                              time.id = time.id.test,
                               spacetime.id = spacetime.id.test,
                               in.sample = in_sample)
 

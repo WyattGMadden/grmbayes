@@ -44,10 +44,10 @@ ctm_fit <- grm(Y = ctm_pm25$pm25,
 cv_id_ctm_spat <- create_cv(space.id = ctm_pm25$space_id,
                        time.id = ctm_pm25$time_id)
 
-
 cv_id_ctm_ord <- create_cv(space.id = ctm_pm25$space_id,
                        time.id = ctm_pm25$time_id,
                        type = "ordinary")
+
 cv_id_ctm_spcl <- create_cv(space.id = ctm_pm25$space_id,
                        time.id = ctm_pm25$time_id,
                        type = "spatial_clustered",
@@ -55,16 +55,16 @@ cv_id_ctm_spcl <- create_cv(space.id = ctm_pm25$space_id,
 
 
 # library(tidyverse)
-# tibble(x = ctm_pm25$x, y = ctm_pm25$y, cv_id = cv_id_ctm_spat$cv_id, type = "spat") %>%
-# rbind(tibble(x = ctm_pm25$x, y = ctm_pm25$y, cv_id = cv_id_ctm_ord$cv_id, type = "ord")) %>%
-# rbind(tibble(x = ctm_pm25$x, y = ctm_pm25$y, cv_id = cv_id_ctm_spcl$cv_id, type = "spcl")) %>%
-#     filter(cv_id != 0) %>%
-#     ggplot(aes(x = x, y = y)) +
-#     geom_jitter(width = 10,
-#                 height = 10,
-#                 aes(color = factor(cv_id))) + 
-#     facet_wrap(~type) + 
-#     theme_bw()
+# tibble(x = ctm_pm25$x, y = ctm_pm25$y, cv_id = cv_id_ctm_spat$cv.id, type = "spat") %>%
+#  rbind(tibble(x = ctm_pm25$x, y = ctm_pm25$y, cv_id = cv_id_ctm_ord$cv.id, type = "ord")) %>%
+#  rbind(tibble(x = ctm_pm25$x, y = ctm_pm25$y, cv_id = cv_id_ctm_spcl$cv.id, type = "spcl")) %>%
+#      filter(cv_id != 0) %>%
+#      ggplot(aes(x = x, y = y)) +
+#      geom_jitter(width = 1,
+#                  height = 1,
+#                  aes(color = factor(cv_id))) + 
+#      facet_wrap(~type) + 
+#      theme_bw()
 
 ctm_fit_cv <- grm_cv(Y = ctm_pm25$pm25,
                      X = ctm_pm25$pm25,
@@ -81,6 +81,21 @@ ctm_fit_cv <- grm_cv(Y = ctm_pm25$pm25,
                      time.id = ctm_pm25$time_id,
                      spacetime.id = ctm_pm25$spacetime_id)
 
+
+ctm_fit_cv_spat <- grm_cv(Y = ctm_pm25$pm25,
+                          X = ctm_pm25$pm25,
+                          cv.object = cv_id_ctm_spcl,
+                         L = ctm_pm25[, c("elevation", "forestcover",
+                                          "hwy_length", "lim_hwy_length", 
+                                          "local_rd_length", "point_emi_any")],
+                         M = ctm_pm25[, c("tmp", "wind")],
+                         n.iter = 500,
+                         burn = 100,
+                         thin = 4,
+                         coords = ctm_pm25[, c("x", "y")],
+                         space.id = ctm_pm25$space_id,
+                         time.id = ctm_pm25$time_id,
+                         spacetime.id = ctm_pm25$spacetime_id)
 
 ?maia_pm25
 

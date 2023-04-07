@@ -34,7 +34,7 @@ ensemble_spatial(
 
 \item{space.id.Y.1}{Spatial location ID vector for first primary variable (n)}
 
-\item{n.iter}{Number of iterations used in predictions. Must be <= than post-thined and burned iterations from grm.fit}
+\item{n.iter}{Number of iterations used in predictions.}
 
 \item{burn}{Number of pre-covergence simulations}
 

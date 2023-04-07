@@ -1,6 +1,6 @@
-#' Fit the Geostatistical Regression Model (GRM) With Cross Validation
+#' Make Predictions With Geostatistical Regression Model (GRM)
 #'
-#' This function fits Bayesian Hierarchical Model (BHM) in the form of Y ~ beta X + gamma L + delta M with cross-validation
+#' This function makes predictions using a Bayesian Hierarchical Model (BHM) previously fit with grm()
 #'
 #' @inheritParams grm
 #' @param grm.fit Fit object created with grm()
@@ -57,10 +57,22 @@ grm_pred = function(grm.fit,
         X.pred = scale(X.pred)
         L.pred = as.matrix(L.pred)
         M.pred = as.matrix(M.pred)
-        L.pred = apply(X = L.pred, MARGIN = 2, FUN = scale)
-        M.pred = apply(X = M.pred, MARGIN = 2, FUN = scale)
-        
+        # scale unless variable is all one value 
+        #(can happen in cross validation with binary variables)
+        L.pred = apply(X = L.pred, 
+                       MARGIN = 2, 
+                       FUN = function(x) ifelse(length(unique(x)) != 1,
+                                                scale(x),
+                                                x))
+        # scale unless variable is all one value 
+        #(can happen in cross validation with binary variables)
+        M.pred = apply(X = M.pred, 
+                       MARGIN = 2, 
+                       FUN = function(x) ifelse(length(unique(x)) <= 1,
+                                                scale(x),
+                                                x))
 
+        
         
         if (verbose == TRUE) {
             cat("####################################\n")
@@ -131,7 +143,7 @@ grm_pred = function(grm.fit,
                                                 paste0("Sample", m)]
                   alpha.mu.m = t(Sigma12.m) %*% InvSigma22.m %*% alpha.m
                   alpha.cov.m = Sigma11.m - diag(t(Sigma12.m) %*% InvSigma22.m %*% Sigma12.m)
-                  alpha.m.post = stats::rnorm(N.cell, alpha.mu.m, sqrt(abs(alpha.cov.m)))
+                  alpha.m.post = stats::rnorm(N.cell, alpha.mu.m, sqrt(alpha.cov.m))
                   alpha_space_pred[alpha_space_pred$spacetime.id == j, 
                                    paste0("Sample",m)] = alpha.m.post
               } #End of locations
