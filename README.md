@@ -53,6 +53,7 @@ cv_id_ctm_spcl <- create_cv(space.id = ctm_pm25$space_id,
                        type = "spatial_clustered",
                        coords = ctm_pm25[, c("x", "y")])
 
+cv_id_ctm_spcl 
 
 # library(tidyverse)
 # tibble(x = ctm_pm25$x, y = ctm_pm25$y, cv_id = cv_id_ctm_spat$cv.id, type = "spat") %>%
@@ -85,17 +86,17 @@ ctm_fit_cv <- grm_cv(Y = ctm_pm25$pm25,
 ctm_fit_cv_spat <- grm_cv(Y = ctm_pm25$pm25,
                           X = ctm_pm25$pm25,
                           cv.object = cv_id_ctm_spcl,
-                         L = ctm_pm25[, c("elevation", "forestcover",
-                                          "hwy_length", "lim_hwy_length", 
-                                          "local_rd_length", "point_emi_any")],
-                         M = ctm_pm25[, c("tmp", "wind")],
-                         n.iter = 500,
-                         burn = 100,
-                         thin = 4,
-                         coords = ctm_pm25[, c("x", "y")],
-                         space.id = ctm_pm25$space_id,
-                         time.id = ctm_pm25$time_id,
-                         spacetime.id = ctm_pm25$spacetime_id)
+                          L = ctm_pm25[, c("elevation", "forestcover",
+                                           "hwy_length", "lim_hwy_length", 
+                                           "local_rd_length", "point_emi_any")],
+                          M = ctm_pm25[, c("tmp", "wind")],
+                          n.iter = 500,
+                          burn = 100,
+                          thin = 4,
+                          coords = ctm_pm25[, c("x", "y")],
+                          space.id = ctm_pm25$space_id,
+                          time.id = ctm_pm25$time_id,
+                          spacetime.id = ctm_pm25$spacetime_id)
 
 ?maia_pm25
 

@@ -52,24 +52,31 @@ grm_cv = function(Y,
     for (cv.i in 1:cv.object$num.folds) {
     
         print(paste0("Performing CV Experiment ---- Fold ", cv.i))
-        Y.train = Y[cv.id != cv.i & cv.id != 0]
-        Y.test = Y[cv.id == cv.i]
+        train.id <- cv.id != cv.i & cv.id != 0
+        test.id.temp <- cv.id == cv.i
+        #remove any test observations that are before the first training observation
+        #these will be NA's in final cv predictions
+        test.id.remove <- min(time.id[train.id]) > time.id & test.id.temp
+        test.id <- test.id.temp & !test.id.remove
+        time.id.train = time.id[cv.id != cv.i & cv.id != 0]
+        time.id.test = time.id[cv.id == cv.i]
 
-        X.train = X[cv.id != cv.i & cv.id != 0]
-        X.test = X[cv.id == cv.i]
+        Y.train = Y[train.id]
+        Y.test = Y[test.id]
+
+        X.train = X[train.id]
+        X.test = X[test.id]
     
         #Subset of L matrix based on variable s
         L = as.matrix(L)
-        L.train = L[cv.id != cv.i & cv.id != 0, , drop = FALSE]
-        L.test = L[cv.id == cv.i, , drop = FALSE]
+        L.train = L[train.id, , drop = FALSE]
+        L.test = L[test.id, , drop = FALSE]
         M = as.matrix(M)
-        M.train = M[cv.id != cv.i & cv.id != 0, , drop = FALSE]
-        M.test = M[cv.id == cv.i, , drop = FALSE]
+        M.train = M[train.id, , drop = FALSE]
+        M.test = M[test.id, , drop = FALSE]
     
-        time.id.train = time.id[cv.id != cv.i & cv.id != 0]
-        time.id.test = time.id[cv.id == cv.i]
-        space.id.train = space.id[cv.id != cv.i & cv.id != 0]
-        space.id.test = space.id[cv.id == cv.i]
+        space.id.train = space.id[train.id]
+        space.id.test = space.id[test.id]
 
         #grm requires space.id to be from 1:max(space_id)
         #spatial cross validation breaks this assumption (missing space_id values)
@@ -80,10 +87,10 @@ grm_cv = function(Y,
                                      function(x) which(space.id.train.key == x))
         space.id.test.temp = sapply(space.id.test,
                                     function(x) which(space.id.test.key == x))
-        spacetime.id.train = spacetime.id[cv.id != cv.i & cv.id != 0]
-        spacetime.id.test = spacetime.id[cv.id == cv.i]
-        coords.train = coords[cv.id != cv.i & cv.id != 0, ]
-        coords.test = coords[cv.id == cv.i, ]
+        spacetime.id.train = spacetime.id[train.id]
+        spacetime.id.test = spacetime.id[test.id]
+        coords.train = coords[train.id, ]
+        coords.test = coords[test.id, ]
    
         fit.cv = grm(Y = Y.train, 
                      X = X.train, 
@@ -141,8 +148,8 @@ grm_cv = function(Y,
 
 
 
-        Y.cv$estimate[cv.id == cv.i] = cv.results$estimate
-        Y.cv$sd[cv.id == cv.i] = cv.results$sd
+        Y.cv$estimate[test.id] = cv.results$estimate
+        Y.cv$sd[test.id] = cv.results$sd
 
     }
  
