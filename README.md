@@ -53,19 +53,7 @@ cv_id_ctm_spcl <- create_cv(space.id = ctm_pm25$space_id,
                        type = "spatial_clustered",
                        coords = ctm_pm25[, c("x", "y")])
 
-cv_id_ctm_spcl 
 
-# library(tidyverse)
-# tibble(x = ctm_pm25$x, y = ctm_pm25$y, cv_id = cv_id_ctm_spat$cv.id, type = "spat") %>%
-#  rbind(tibble(x = ctm_pm25$x, y = ctm_pm25$y, cv_id = cv_id_ctm_ord$cv.id, type = "ord")) %>%
-#  rbind(tibble(x = ctm_pm25$x, y = ctm_pm25$y, cv_id = cv_id_ctm_spcl$cv.id, type = "spcl")) %>%
-#      filter(cv_id != 0) %>%
-#      ggplot(aes(x = x, y = y)) +
-#      geom_jitter(width = 1,
-#                  height = 1,
-#                  aes(color = factor(cv_id))) + 
-#      facet_wrap(~type) + 
-#      theme_bw()
 
 ctm_fit_cv <- grm_cv(Y = ctm_pm25$pm25,
                      X = ctm_pm25$pm25,
