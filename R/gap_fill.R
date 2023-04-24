@@ -39,8 +39,8 @@ gap_fill = function(grm.pred.1,
     Y.pred.1 = grm.pred.1$estimate
     Y.sd.1 = grm.pred.1$sd
 
-    Y.pred.2 <- grm.pred.2$estimate[match(grm.pred.1$estimate, 
-                                          grm.pred.2$estimate)]
+    Y.pred.2 <- grm.pred.2$estimate[match(grm.pred.1$link_id,
+                                          grm.pred.2$link_id)]
     Y.sd.2 <- grm.pred.2$sd[match(grm.pred.1$link_id, 
                                   grm.pred.2$link_id)]
 

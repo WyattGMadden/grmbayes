@@ -42,7 +42,7 @@ ctm_fit <- grm(Y = ctm_pm25$pm25,
                spacetime.id = ctm_pm25$spacetime_id)
 
 cv_id_ctm_spat <- create_cv(space.id = ctm_pm25$space_id,
-                       time.id = ctm_pm25$time_id)
+                            time.id = ctm_pm25$time_id)
 
 cv_id_ctm_ord <- create_cv(space.id = ctm_pm25$space_id,
                        time.id = ctm_pm25$time_id,
@@ -187,6 +187,7 @@ ensemble_fit <- ensemble_spatial(grm.fit.cv.1 = ctm_fit_cv,
                                  theta.tune = 0.2, 
                                  theta.a = 5, 
                                  theta.b = 0.05)
+ctm_fit_cv$space_id == maia_fit_cv$space_id
 ```
 
 ### Stage 4

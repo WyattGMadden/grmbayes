@@ -99,7 +99,7 @@ ensemble_spatial = function(grm.fit.cv.1,
     ##Update W
     for (i in 1:n.iter){
 
-        if ((i %% 5000) == 0) {
+        if ((i %% 1000) == 0) {
             cat(paste("  Iteration", i, "of", n.iter, "\n"))
         }
  
