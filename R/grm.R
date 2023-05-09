@@ -195,7 +195,7 @@ grm = function(Y,
     
     for (spacetime.i in 1:N.spacetime) {
         for (mon.i in 1:N.space) {
-          use = which (space.id == mon.i & spacetime.id == spacetime.i) 
+          use = which(space.id == mon.i & spacetime.id == spacetime.i) 
           SpaceTime.avail = rbind(SpaceTime.avail, 
                                   c(spacetime.i, mon.i, length(use)))
           
@@ -213,6 +213,7 @@ grm = function(Y,
     if (!is.null(M)) MtM = t(M) %*% M
     if (!is.null(L)) LtL = t(L) %*% L
     XtX = t(cbind(1, X)) %*% cbind(1, X)
+    XtX_inv = solve(XtX)
 
     ### Discretize CAR parameters
     nrho = 2000
@@ -293,7 +294,7 @@ grm = function(Y,
       tau_alpha = as.numeric(stats::var(alpha_space, na.rm = T))
     }
     
-    ###Initialize alpha_spacetime and its spatial variance tau_beta
+    ###Initialize beta_spacetime and its spatial variance tau_beta
     beta_space = rep(0, N.spacetime * N.space)
     tau_beta = 0
     if (include.multiplicative.annual.resid) {
@@ -302,7 +303,7 @@ grm = function(Y,
       tau_beta = as.numeric(stats::var(beta_space, na.rm = T))
     }
     
-    ###Initializae mean
+    ###Initialize mean
     MMM = alpha0 + beta0 * X + L %*% gamma+ M %*% delta + alpha_time[time.id] + beta_time[time.id] * X + alpha_space[Z_ID] + beta_space[Z_ID] * X
     
     ###Initializae sigma2
@@ -370,10 +371,10 @@ grm = function(Y,
       MMM =  MMM - alpha0 - beta0 * X 
       RRR = Y - MMM
       XXX = t(cbind(1,X)) %*% RRR
-      VVV = solve(XtX)
-      junk = matrix(mvnfast::rmvn(1, VVV %*% XXX, sigma2 * VVV), ncol = 1)
-      alpha0 = junk[1]
-      beta0 = junk[2]
+      VVV = XtX_inv
+      alpha0_beta0 = matrix(mvnfast::rmvn(1, VVV %*% XXX, sigma2 * VVV), ncol = 1)
+      alpha0 = alpha0_beta0[1]
+      beta0 = alpha0_beta0[2]
       MMM = MMM + alpha0 + beta0 * X
       
       #Update gamma
@@ -420,10 +421,11 @@ grm = function(Y,
          SSS = tau_alpha * exp(-dist.space.mat / theta_alpha)
          VVV = diag(1 / sigma2 * GtG_space) + kronecker(solve(SSS), diag(N.spacetime))
          VVV = solve(VVV)
-         alpha_space = mvnfast::rmvn(1, VVV %*% XXX, VVV)[1,]
+         alpha_space = as.vector(mvnfast::rmvn(1, VVV %*% XXX, VVV))
          MMM = MMM + alpha_space[Z_ID]
       
          #update tau_alpha
+         browser()
          SSS = t(alpha_space) %*% 
              kronecker(solve(exp(-dist.space.mat / theta_alpha)), 
                        diag(N.spacetime)) %*% 
@@ -501,7 +503,7 @@ grm = function(Y,
                                    theta.a, 
                                    theta.b, 
                                    log = T) + 
-            log (theta.prop) -
+            log(theta.prop) -
             lik.curr - 
             stats::dgamma(theta_beta, 
                    theta.a, 
