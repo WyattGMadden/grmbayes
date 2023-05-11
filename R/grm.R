@@ -15,6 +15,8 @@
 #' @param include.additive.annual.resid Include additive spatial (annual) residual bias not explained by other inputes
 #' @param include.multiplicative.weekly.resid Include multiplicative temporal (weekly) residual bias not explained by other inputes
 #' @param include.multiplicative.annual.resid Include multiplicative spatial (weekly) residual bias not explained by other inputes
+#' @param nngp Use nearest neighbor Gaussian process (NNGP) in place of Gaussian process
+#' @param num_neighbors Number of nearest neighbors to use in NNGP
 #' @param n.iter Number of iterations used in predictions. 
 #' @param burn Number of pre-covergence simulations
 #' @param thin Save every thin'th simulation
@@ -48,6 +50,7 @@ grm = function(Y,
                include.additive.annual.resid = T,
                include.multiplicative.weekly.resid = T,
                include.multiplicative.annual.resid = T,
+               nngp = F,
                n.iter = 25000,
                burn = 5000,
                thin = 4,
@@ -214,6 +217,16 @@ grm = function(Y,
     if (!is.null(L)) LtL = t(L) %*% L
     XtX = t(cbind(1, X)) %*% cbind(1, X)
     XtX_inv = solve(XtX)
+
+    ### NNGP ordering and neighbors
+    if (nngp) {
+        coord_list <- order_coords(coords)
+        ordered_coords <- coord_list$ordered_coords
+        coord_ordering <- coord_list$coord_ordering
+        neighbors <- get_neighbors(ordered_coords)
+
+    }
+
 
     ### Discretize CAR parameters
     nrho = 2000
@@ -413,8 +426,8 @@ grm = function(Y,
       RRR = Y - MMM
       sigma2 = 1 / stats::rgamma(1, length(RRR) / 2 + sigma.a, sum(RRR ^ 2) / 2 + sigma.b)
        
-      #Update spatial intercepts and parameters
-      if (include.additive.annual.resid) {
+      #Update spatial intercepts and parameters if GP
+      if (include.additive.annual.resid & !nngp) {
          MMM = MMM - alpha_space[Z_ID]
          RRR = Y - MMM
          XXX = 1 / sigma2 * t(Gamma_space) %*% RRR
@@ -425,7 +438,63 @@ grm = function(Y,
          MMM = MMM + alpha_space[Z_ID]
       
          #update tau_alpha
-         browser()
+         SSS = t(alpha_space) %*% 
+             kronecker(solve(exp(-dist.space.mat / theta_alpha)), 
+                       diag(N.spacetime)) %*% 
+            alpha_space
+         tau_alpha = 1 / stats::rgamma(1, 
+                                N.space * N.spacetime / 2 + tau.a, 
+                                SSS / 2 + tau.b)
+      
+         #Update theta_alpha
+         theta.prop = stats::rlnorm(1, 
+                             log(theta_alpha), 
+                             theta.tune)
+         SSS.curr = tau_alpha * kronecker((exp(-dist.space.mat / theta_alpha)), 
+                                          diag(N.spacetime))
+         SSS.prop = tau_alpha * kronecker((exp(-dist.space.mat / theta.prop)), 
+                                          diag(N.spacetime))
+      
+         lik.prop = mvtnorm::dmvnorm(alpha_space, 
+                            rep(0, N.space * N.spacetime), 
+                            SSS.curr, 
+                            log = T)
+         lik.curr = mvtnorm::dmvnorm(alpha_space, 
+                            rep(0, N.space * N.spacetime), 
+                            SSS.prop, 
+                            log = T)
+      
+         ratio = lik.prop + 
+             stats::dgamma(theta.prop, 
+                    theta.a, 
+                    theta.b, 
+                    log = T) + 
+             log(theta.prop) -
+             lik.curr - stats::dgamma(theta_alpha, theta.a, theta.b, log = T) - log(theta_alpha)
+         if (log(stats::runif(1)) < ratio) {
+           theta_alpha = theta.prop
+           theta.acc[1] = theta.acc[1] + 1
+         }
+      }
+      #Update spatial intercepts and parameters if NNGP
+      if (include.additive.annual.resid & nngp) {
+         MMM = MMM - alpha_space[Z_ID]
+         RRR = Y - MMM
+         XXX = 1 / sigma2 * t(Gamma_space) %*% RRR
+         #calculate separately for each spacetime
+         for (st in 1:unique(spacetime.id)) {
+             XXX_st <- XXX[spacetime.id == st, ]
+             GTG_space_st <- GtG_space[spacetime.id == st]
+             coords_st <- coords[spacetime.id == st, ]
+
+         }
+         SSS = tau_alpha * exp(-dist.space.mat / theta_alpha)
+         VVV = diag(1 / sigma2 * GtG_space) + kronecker(solve(SSS), diag(N.spacetime))
+         VVV = solve(VVV)
+         alpha_space = as.vector(mvnfast::rmvn(1, VVV %*% XXX, VVV))
+         MMM = MMM + alpha_space[Z_ID]
+      
+         #update tau_alpha
          SSS = t(alpha_space) %*% 
              kronecker(solve(exp(-dist.space.mat / theta_alpha)), 
                        diag(N.spacetime)) %*% 
@@ -465,8 +534,60 @@ grm = function(Y,
          }
       }
       
-      # #Update spatial coefficent for AOD
-      if (include.multiplicative.annual.resid) {
+      # #Update spatial coefficent for AOD if GP
+      if (include.multiplicative.annual.resid & !nngp) {
+         MMM = MMM - beta_space[Z_ID] * X
+         RRR = Y - MMM
+         XXX = 1 / sigma2 * t(Gamma_space) %*% (X * RRR)
+         SSS = tau_beta * exp(-dist.space.mat / theta_beta)
+         VVV = diag(1 / sigma2 * X_S) + kronecker(solve(SSS), diag(N.spacetime))
+         VVV = solve(VVV)
+         beta_space = mvnfast::rmvn(1, VVV %*% XXX, VVV)[1, ]
+         MMM = MMM + beta_space[Z_ID] * X
+      
+         #update tau_beta
+         SSS = t(beta_space) %*% 
+             kronecker(solve(exp(-dist.space.mat / theta_beta)), 
+                       diag(N.spacetime)) %*% 
+             beta_space
+         tau_beta = 1 / stats::rgamma(1, N.space * N.spacetime /2 + tau.a, SSS / 2 + tau.b)
+      
+         #Update theta_beta
+         theta.prop = stats::rlnorm(1, log(theta_beta), theta.tune)
+         SSS.curr = tau_beta * kronecker((exp(-dist.space.mat/theta_beta)), 
+                                         diag(N.spacetime))
+         SSS.prop = tau_beta * kronecker((exp(-dist.space.mat/theta.prop)), 
+                                         diag(N.spacetime))
+      
+         lik.prop = mvtnorm::dmvnorm(beta_space, 
+                            rep(0,N.space*N.spacetime), 
+                            SSS.curr, 
+                            log = T)
+         lik.curr = mvtnorm::dmvnorm(beta_space, 
+                            rep(0, N.space * N.spacetime), 
+                            SSS.prop, 
+                            log = T)
+      
+         ratio = lik.prop + stats::dgamma(theta.prop,  
+                                   theta.a, 
+                                   theta.b, 
+                                   log = T) + 
+            log(theta.prop) -
+            lik.curr - 
+            stats::dgamma(theta_beta, 
+                   theta.a, 
+                   theta.b, 
+                   log = T) - 
+            log(theta_beta)
+
+         if(log(stats::runif(1)) < ratio) {
+           theta_beta = theta.prop
+           theta.acc[2] = theta.acc[2] + 1
+         }
+       }
+
+      # #Update spatial coefficent for AOD if NNGP
+      if (include.multiplicative.annual.resid & nngp) {
          MMM = MMM - beta_space[Z_ID] * X
          RRR = Y - MMM
          XXX = 1 / sigma2 * t(Gamma_space) %*% (X * RRR)

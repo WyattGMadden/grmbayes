@@ -136,7 +136,6 @@ grm_pred = function(grm.fit,
               Sigma11.m = tau.m
               Sigma12.m = tau.m * exp(-1 / theta.m * D12)
               Sigma22.m = tau.m * exp(-1 / theta.m * D22)
-              browser()
               InvSigma22.m = solve(Sigma22.m)
         
               for (j in 1:N.spacetime) {
