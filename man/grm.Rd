@@ -18,6 +18,7 @@ grm(
   include.multiplicative.weekly.resid = T,
   include.multiplicative.annual.resid = T,
   nngp = F,
+  num_neighbors = 10,
   n.iter = 25000,
   burn = 5000,
   thin = 4,
@@ -60,6 +61,8 @@ grm(
 
 \item{nngp}{Use nearest neighbor Gaussian process (NNGP) in place of Gaussian process}
 
+\item{num_neighbors}{Number of nearest neighbors to use in NNGP}
+
 \item{n.iter}{Number of iterations used in predictions.}
 
 \item{burn}{Number of pre-covergence simulations}
@@ -85,8 +88,6 @@ grm(
 \item{sigma.b}{Second sigma prior hyperparameter}
 
 \item{verbose}{Print MCMC output}
-
-\item{num_neighbors}{Number of nearest neighbors to use in NNGP}
 }
 \value{
 A list containing MCMC output

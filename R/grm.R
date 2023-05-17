@@ -51,6 +51,7 @@ grm = function(Y,
                include.multiplicative.weekly.resid = T,
                include.multiplicative.annual.resid = T,
                nngp = F,
+               num_neighbors = 10,
                n.iter = 25000,
                burn = 5000,
                thin = 4,
@@ -154,6 +155,29 @@ grm = function(Y,
     Time.obs = 1:N.time %in% time.id ## T/F for which days are observed
     
     Q = spam::diag.spam(apply(A, 2, sum)) #Row sums of A 
+
+    ##########################################################################
+    ### Calculate Nearest Neighbor Gaussian Process Neighbors and Ordering ###
+    ##########################################################################
+    
+    ### get coordinate ordering (from upper right to lower left of spatial grid)
+    if (nngp) {
+        unique_coords <- unique(cbind(space.id, coords))
+        unique_coords <- unique_coords[order(unique_coords$space.id), ]
+        coord_list <- order_coords(coords = unique_coords[, c("x", "y")],
+                               space_id = unique_coords$space.id)
+        ordered_coords <- coord_list[["ordered_coords"]]
+        coord_ordering <- coord_list[["coord_ordering"]]
+        coord_reverse_ordering <- coord_list[["coord_reverse_ordering"]]
+
+        ### get list of neighbors w.r.t. coord ordering
+        neighbors <- get_neighbors(ordered_coords, m = num_neighbors)
+
+        ### space assignment to spacetime vector
+        space_to_spacetime_assign <- rep(unique(spacetime.id), each = N.space)
+    }
+
+
     
     ####################################################
     ### Pre-calculate quantities to save computation ###
@@ -217,15 +241,6 @@ grm = function(Y,
     if (!is.null(L)) LtL = t(L) %*% L
     XtX = t(cbind(1, X)) %*% cbind(1, X)
     XtX_inv = solve(XtX)
-
-    ### NNGP ordering and neighbors
-    if (nngp) {
-        coord_list <- order_coords(coords)
-        ordered_coords <- coord_list$ordered_coords
-        coord_ordering <- coord_list$coord_ordering
-        neighbors <- get_neighbors(ordered_coords)
-
-    }
 
 
     ### Discretize CAR parameters
@@ -432,15 +447,15 @@ grm = function(Y,
          RRR = Y - MMM
          XXX = 1 / sigma2 * t(Gamma_space) %*% RRR
          SSS = tau_alpha * exp(-dist.space.mat / theta_alpha)
-         VVV = diag(1 / sigma2 * GtG_space) + kronecker(solve(SSS), diag(N.spacetime))
+         VVV = diag(1 / sigma2 * GtG_space) + kronecker(diag(N.spacetime), solve(SSS))
          VVV = solve(VVV)
          alpha_space = as.vector(mvnfast::rmvn(1, VVV %*% XXX, VVV))
          MMM = MMM + alpha_space[Z_ID]
       
          #update tau_alpha
          SSS = t(alpha_space) %*% 
-             kronecker(solve(exp(-dist.space.mat / theta_alpha)), 
-                       diag(N.spacetime)) %*% 
+             kronecker(diag(N.spacetime), 
+                       solve(exp(-dist.space.mat / theta_alpha))) %*% 
             alpha_space
          tau_alpha = 1 / stats::rgamma(1, 
                                 N.space * N.spacetime / 2 + tau.a, 
@@ -450,10 +465,10 @@ grm = function(Y,
          theta.prop = stats::rlnorm(1, 
                              log(theta_alpha), 
                              theta.tune)
-         SSS.curr = tau_alpha * kronecker((exp(-dist.space.mat / theta_alpha)), 
-                                          diag(N.spacetime))
-         SSS.prop = tau_alpha * kronecker((exp(-dist.space.mat / theta.prop)), 
-                                          diag(N.spacetime))
+         SSS.curr = tau_alpha * kronecker(diag(N.spacetime),
+                                          (exp(-dist.space.mat / theta_alpha)))
+         SSS.prop = tau_alpha * kronecker(diag(N.spacetime),
+                                          (exp(-dist.space.mat / theta.prop)))
       
          lik.prop = mvtnorm::dmvnorm(alpha_space, 
                             rep(0, N.space * N.spacetime), 
@@ -482,22 +497,22 @@ grm = function(Y,
          RRR = Y - MMM
          XXX = 1 / sigma2 * t(Gamma_space) %*% RRR
          #calculate separately for each spacetime
-         for (st in 1:unique(spacetime.id)) {
-             XXX_st <- XXX[spacetime.id == st, ]
+         for (st in unique(spacetime.id)) {
+             XXX_st <- XXX[space_to_spacetime_assign == st, ]
              GTG_space_st <- GtG_space[spacetime.id == st]
              coords_st <- coords[spacetime.id == st, ]
 
+
          }
          SSS = tau_alpha * exp(-dist.space.mat / theta_alpha)
-         VVV = diag(1 / sigma2 * GtG_space) + kronecker(solve(SSS), diag(N.spacetime))
+         VVV = diag(1 / sigma2 * GtG_space) + kronecker(diag(N.spacetime), solve(SSS))
          VVV = solve(VVV)
          alpha_space = as.vector(mvnfast::rmvn(1, VVV %*% XXX, VVV))
          MMM = MMM + alpha_space[Z_ID]
       
          #update tau_alpha
          SSS = t(alpha_space) %*% 
-             kronecker(solve(exp(-dist.space.mat / theta_alpha)), 
-                       diag(N.spacetime)) %*% 
+             kronecker(diag(N.spacetime), solve(exp(-dist.space.mat / theta_alpha))) %*% 
             alpha_space
          tau_alpha = 1 / stats::rgamma(1, 
                                 N.space * N.spacetime / 2 + tau.a, 
@@ -507,10 +522,8 @@ grm = function(Y,
          theta.prop = stats::rlnorm(1, 
                              log(theta_alpha), 
                              theta.tune)
-         SSS.curr = tau_alpha * kronecker((exp(-dist.space.mat / theta_alpha)), 
-                                          diag(N.spacetime))
-         SSS.prop = tau_alpha * kronecker((exp(-dist.space.mat / theta.prop)), 
-                                          diag(N.spacetime))
+         SSS.curr = tau_alpha * kronecker(diag(N.spacetime), (exp(-dist.space.mat / theta_alpha)))
+         SSS.prop = tau_alpha * kronecker(diag(N.spacetime), (exp(-dist.space.mat / theta.prop)))
       
          lik.prop = mvtnorm::dmvnorm(alpha_space, 
                             rep(0, N.space * N.spacetime), 
@@ -540,24 +553,25 @@ grm = function(Y,
          RRR = Y - MMM
          XXX = 1 / sigma2 * t(Gamma_space) %*% (X * RRR)
          SSS = tau_beta * exp(-dist.space.mat / theta_beta)
-         VVV = diag(1 / sigma2 * X_S) + kronecker(solve(SSS), diag(N.spacetime))
+         VVV = diag(1 / sigma2 * X_S) + kronecker(diag(N.spacetime),
+                                                  solve(SSS))
          VVV = solve(VVV)
          beta_space = mvnfast::rmvn(1, VVV %*% XXX, VVV)[1, ]
          MMM = MMM + beta_space[Z_ID] * X
       
          #update tau_beta
          SSS = t(beta_space) %*% 
-             kronecker(solve(exp(-dist.space.mat / theta_beta)), 
-                       diag(N.spacetime)) %*% 
+             kronecker(diag(N.spacetime),
+                       solve(exp(-dist.space.mat / theta_beta))) %*% 
              beta_space
          tau_beta = 1 / stats::rgamma(1, N.space * N.spacetime /2 + tau.a, SSS / 2 + tau.b)
       
          #Update theta_beta
          theta.prop = stats::rlnorm(1, log(theta_beta), theta.tune)
-         SSS.curr = tau_beta * kronecker((exp(-dist.space.mat/theta_beta)), 
-                                         diag(N.spacetime))
-         SSS.prop = tau_beta * kronecker((exp(-dist.space.mat/theta.prop)), 
-                                         diag(N.spacetime))
+         SSS.curr = tau_beta * kronecker(diag(N.spacetime), 
+                                         (exp(-dist.space.mat/theta_beta)))
+         SSS.prop = tau_beta * kronecker(diag(N.spacetime),
+                                         (exp(-dist.space.mat/theta.prop)))
       
          lik.prop = mvtnorm::dmvnorm(beta_space, 
                             rep(0,N.space*N.spacetime), 
@@ -592,24 +606,24 @@ grm = function(Y,
          RRR = Y - MMM
          XXX = 1 / sigma2 * t(Gamma_space) %*% (X * RRR)
          SSS = tau_beta * exp(-dist.space.mat / theta_beta)
-         VVV = diag(1 / sigma2 * X_S) + kronecker(solve(SSS), diag(N.spacetime))
+         VVV = diag(1 / sigma2 * X_S) + kronecker(diag(N.spacetime), solve(SSS))
          VVV = solve(VVV)
          beta_space = mvnfast::rmvn(1, VVV %*% XXX, VVV)[1, ]
          MMM = MMM + beta_space[Z_ID] * X
       
          #update tau_beta
          SSS = t(beta_space) %*% 
-             kronecker(solve(exp(-dist.space.mat / theta_beta)), 
-                       diag(N.spacetime)) %*% 
+             kronecker(diag(N.spacetime), 
+                       solve(exp(-dist.space.mat / theta_beta))) %*% 
              beta_space
          tau_beta = 1 / stats::rgamma(1, N.space * N.spacetime /2 + tau.a, SSS / 2 + tau.b)
       
          #Update theta_beta
          theta.prop = stats::rlnorm(1, log(theta_beta), theta.tune)
-         SSS.curr = tau_beta * kronecker((exp(-dist.space.mat/theta_beta)), 
-                                         diag(N.spacetime))
-         SSS.prop = tau_beta * kronecker((exp(-dist.space.mat/theta.prop)), 
-                                         diag(N.spacetime))
+         SSS.curr = tau_beta * kronecker(diag(N.spacetime), 
+                                         (exp(-dist.space.mat/theta_beta)))
+         SSS.prop = tau_beta * kronecker(diag(N.spacetime), 
+                                         (exp(-dist.space.mat/theta.prop)))
       
          lik.prop = mvtnorm::dmvnorm(beta_space, 
                             rep(0,N.space*N.spacetime), 

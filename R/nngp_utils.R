@@ -1,4 +1,8 @@
 
+exp_cov <- function(dist, phi, r) {
+    phi * exp(-dist / r)
+}
+
 euc_dist <- function(x1, y1, x2, y2) {
     sqrt((x1 - x2)^2 + (y1 - y2)^2)
 }
@@ -38,7 +42,7 @@ get_neighbors <- function(ordered_coords, m) {
 
 rnngp <- function(ordered_coords, neighbors, phi, r) {
     y <- rep(0, nrow(ordered_coords))
-    y[nrow(ordered_coords)] <- rnorm(1, 0, sqrt(exp_cov(0, phi, r)))
+    y[nrow(ordered_coords)] <- stats::rnorm(1, 0, sqrt(exp_cov(0, phi, r)))
     for (i in (nrow(ordered_coords) - 1):1) {
         neighbor_i <- neighbors[[i]]
         neighbor_coords <- ordered_coords[neighbor_i, , drop = FALSE]
@@ -54,16 +58,16 @@ rnngp <- function(ordered_coords, neighbors, phi, r) {
         cross_neighbor_cov <- t(cross_cov) %*% solve(neighbor_cov) 
         conditional_mean <- cross_neighbor_cov %*% neighbor_y
         conditional_cov <- y_cov - cross_neighbor_cov %*% cross_cov
-        y[i] <- rnorm(1, 
-                      conditional_mean,
-                      sqrt(conditional_cov))
+        y[i] <- stats::rnorm(1, 
+                             conditional_mean,
+                             sqrt(conditional_cov))
     }
     return(y)
 }
 
 dnngp <- function(y, ordered_coords, neighbors, phi, r, log = FALSE) {
     d <- rep(0, nrow(ordered_coords))
-    d[nrow(ordered_coords)] <- dnorm(y[nrow(ordered_coords)], 0, sqrt(exp_cov(0, phi, r)))
+    d[nrow(ordered_coords)] <- stats::dnorm(y[nrow(ordered_coords)], 0, sqrt(exp_cov(0, phi, r)))
     for (i in 1:(nrow(ordered_coords) - 1)) {
         neighbor_i <- neighbors[[i]]
         neighbor_coords <- ordered_coords[neighbor_i, , drop = FALSE]
@@ -79,7 +83,7 @@ dnngp <- function(y, ordered_coords, neighbors, phi, r, log = FALSE) {
         cross_neighbor_cov <- t(cross_cov) %*% solve(neighbor_cov) 
         conditional_mean <- cross_neighbor_cov %*% neighbor_y
         conditional_cov <- y_cov - cross_neighbor_cov %*% cross_cov
-        d[i] <- dnorm(1, 
+        d[i] <- stats::dnorm(1, 
                       conditional_mean,
                       sqrt(conditional_cov),
                       log = log)
