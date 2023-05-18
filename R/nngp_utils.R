@@ -65,9 +65,14 @@ rnngp <- function(ordered_coords, neighbors, phi, r) {
     return(y)
 }
 
+
+
 dnngp <- function(y, ordered_coords, neighbors, phi, r, log = FALSE) {
     d <- rep(0, nrow(ordered_coords))
-    d[nrow(ordered_coords)] <- stats::dnorm(y[nrow(ordered_coords)], 0, sqrt(exp_cov(0, phi, r)))
+    d[nrow(ordered_coords)] <- stats::dnorm(y[nrow(ordered_coords)], 
+                                            0, 
+                                            sqrt(exp_cov(0, phi, r)), 
+                                            log = log)
     for (i in 1:(nrow(ordered_coords) - 1)) {
         neighbor_i <- neighbors[[i]]
         neighbor_coords <- ordered_coords[neighbor_i, , drop = FALSE]
@@ -83,10 +88,10 @@ dnngp <- function(y, ordered_coords, neighbors, phi, r, log = FALSE) {
         cross_neighbor_cov <- t(cross_cov) %*% solve(neighbor_cov) 
         conditional_mean <- cross_neighbor_cov %*% neighbor_y
         conditional_cov <- y_cov - cross_neighbor_cov %*% cross_cov
-        d[i] <- stats::dnorm(1, 
-                      conditional_mean,
-                      sqrt(conditional_cov),
-                      log = log)
+        d[i] <- stats::dnorm(y[i], 
+                             conditional_mean,
+                             sqrt(conditional_cov),
+                             log = log)
     }
     return(d)
 }
