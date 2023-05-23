@@ -380,7 +380,6 @@ grm = function(Y,
     
     Y.hat = rep(0, length(Y))
     
-    tau.acc = c(0,0)
     theta.acc = c(0,0)
     
     
@@ -397,7 +396,6 @@ grm = function(Y,
 
       if (verbose == TRUE) {
         if ((i %% 1000) == 0) print(paste("     Iteration", i, "of", n.iter))
-        print(i)
       }
     
       ###Update alpha0 and beta0
@@ -517,7 +515,7 @@ grm = function(Y,
             #iterate through ordered conditionals
              joint_cov_n <- 1 / VVV_n
              joint_mean_n <- joint_cov_n * XXX_st_ord[length(alpha_space_st)]
-             alpha_space_st[length(alpha_space_st)] <- stats::rnorm(1, joint_mean_n, sqrt(joint_cov_n))
+             alpha_space_st[length(alpha_space_st)] <- rnorm(1, joint_mean_n, sqrt(joint_cov_n))
 
             for (i in (length(alpha_space_st) - 1):1) {
                 i_and_neighbors <- c(i, neighbors[[i]])
@@ -536,7 +534,7 @@ grm = function(Y,
                 cond_cov <- joint_cov[1, 1] - 
                     sigma_12_inv_sigma_22 %*% 
                     joint_cov[2:nrow(joint_cov), 1]
-                alpha_space_st[i] <- stats::rnorm(1, cond_mean, sqrt(cond_cov))
+                alpha_space_st[i] <- rnorm(1, cond_mean, sqrt(cond_cov))
             }
             #reverse order back to original
             alpha_space_st <- alpha_space_st[coord_reverse_ordering]
@@ -545,6 +543,13 @@ grm = function(Y,
 
          MMM = MMM + alpha_space[Z_ID]
       
+         #update tau_alpha
+         #SSS = t(alpha_space) %*% 
+         #    kronecker(diag(N.spacetime), solve(exp(-dist.space.mat / theta_alpha))) %*% 
+         #   alpha_space
+         #tau_alpha = 1 / stats::rgamma(1, 
+         #                       N.space * N.spacetime / 2 + tau.a, 
+         #                       SSS / 2 + tau.b)
       
          #Update tau_alpha
          tau_prop = stats::rlnorm(1, 
@@ -591,48 +596,33 @@ grm = function(Y,
            tau.acc[1] = tau.acc[1] + 1
          }
 
-         #Update theta_alpha
-         theta_prop = stats::rlnorm(1, 
-                                    log(theta_alpha), 
-                                    theta.tune)
-         lik_prop <- 0
-         lik_cur <- 0
-         for (st in unique(spacetime.id)) {
-             alpha_space_st <- alpha_space[space_to_spacetime_assign == st]
-             alpha_space_st <- alpha_space_st[coord_ordering]
-             lik_prop <- lik_prop +
-                 sum(dnngp(y = alpha_space_st,
-                           ordered_coords = ordered_coords,
-                           neighbors = neighbors,
-                           phi = tau_alpha,
-                           r = theta_prop,
-                           log = T))
-             lik_cur <- lik_cur +
-                 sum(dnngp(y = alpha_space_st,
-                           ordered_coords = ordered_coords,
-                           neighbors = neighbors,
-                           phi = tau_alpha,
-                           r = theta_alpha,
-                           log = T))
-         }
-
-
+         browser()
       
-         ratio = lik_prop + 
-             stats::dgamma(theta_prop, 
+         #Update theta_alpha
+         theta.prop = stats::rlnorm(1, 
+                             log(theta_alpha), 
+                             theta.tune)
+         SSS.curr = tau_alpha * kronecker(diag(N.spacetime), (exp(-dist.space.mat / theta_alpha)))
+         SSS.prop = tau_alpha * kronecker(diag(N.spacetime), (exp(-dist.space.mat / theta.prop)))
+      
+         lik.prop = mvtnorm::dmvnorm(alpha_space, 
+                            rep(0, N.space * N.spacetime), 
+                            SSS.curr, 
+                            log = T)
+         lik.curr = mvtnorm::dmvnorm(alpha_space, 
+                            rep(0, N.space * N.spacetime), 
+                            SSS.prop, 
+                            log = T)
+      
+         ratio = lik.prop + 
+             stats::dgamma(theta.prop, 
                     theta.a, 
                     theta.b, 
                     log = T) + 
-             log(theta_prop) -
-             lik_cur - 
-             stats::dgamma(theta_alpha, 
-                           theta.a, 
-                           theta.b, 
-                           log = T) - 
-             log(theta_alpha)
-
+             log(theta.prop) -
+             lik.curr - stats::dgamma(theta_alpha, theta.a, theta.b, log = T) - log(theta_alpha)
          if (log(stats::runif(1)) < ratio) {
-           theta_alpha = theta_prop
+           theta_alpha = theta.prop
            theta.acc[1] = theta.acc[1] + 1
          }
       }
@@ -646,9 +636,8 @@ grm = function(Y,
          VVV = diag(1 / sigma2 * X_S) + kronecker(diag(N.spacetime),
                                                   solve(SSS))
          VVV = solve(VVV)
-         beta_space = as.vector(mvnfast::rmvn(1, VVV %*% XXX, VVV))
+         beta_space = mvnfast::rmvn(1, VVV %*% XXX, VVV)[1, ]
          MMM = MMM + beta_space[Z_ID] * X
-
       
          #update tau_beta
          SSS = t(beta_space) %*% 
@@ -696,138 +685,49 @@ grm = function(Y,
          MMM = MMM - beta_space[Z_ID] * X
          RRR = Y - MMM
          XXX = 1 / sigma2 * t(Gamma_space) %*% (X * RRR)
-
-         beta_space <- rep(0, N.space * N.spacetime)
-         #calculate separately for each spacetime
-         for (st in unique(spacetime.id)) {
-             XXX_st <- XXX[space_to_spacetime_assign == st, , drop = FALSE]
-             XXX_st_ord <- XXX_st[coord_ordering, , drop = FALSE]
-             X_S_st <- X_S[space_to_spacetime_assign == st]
-             X_S_st_ord <- X_S_st[coord_ordering]
-             coords_st_ord <- ordered_coords
-
-             beta_space_st <- beta_space[space_to_spacetime_assign == st]
-             SSS_n <- tau_beta * exp(- 0 / theta_beta)
-             VVV_n <- (1 / sigma2 * X_S_st_ord[length(beta_space_st)]) + (1 / SSS_n)
-            #iterate through ordered conditionals
-             joint_cov_n <- 1 / VVV_n
-             joint_mean_n <- joint_cov_n * XXX_st_ord[length(beta_space_st)]
-             beta_space_st[length(beta_space_st)] <- stats::rnorm(1, joint_mean_n, sqrt(joint_cov_n))
-
-            for (i in (length(beta_space_st) - 1):1) {
-                i_and_neighbors <- c(i, neighbors[[i]])
-                dist_space_mat_i <- as.matrix(stats::dist(coords_st_ord[i_and_neighbors, ],
-                                                          diag = TRUE,
-                                                          upper = TRUE))
-                SSS_i <- tau_beta * exp(- dist_space_mat_i / theta_beta)
-                VVV_i = diag(1 / sigma2 * X_S_st_ord[i_and_neighbors]) + solve(SSS_i)
-                joint_cov = solve(VVV_i)
-                joint_mean <- joint_cov %*% XXX_st_ord[i_and_neighbors]
-                sigma_12_inv_sigma_22 <- joint_cov[1, 2:ncol(joint_cov)] %*% solve(joint_cov[2:ncol(joint_cov), 2:ncol(joint_cov)])
-                cond_mean <- joint_mean[1] - 
-                    sigma_12_inv_sigma_22 %*% 
-                    (beta_space_st[neighbors[[i]]] - 
-                     joint_mean[2:nrow(joint_mean)])
-                cond_cov <- joint_cov[1, 1] - 
-                    sigma_12_inv_sigma_22 %*% 
-                    joint_cov[2:nrow(joint_cov), 1]
-                beta_space_st[i] <- stats::rnorm(1, cond_mean, sqrt(cond_cov))
-            }
-            #reverse order back to original
-            beta_space_st <- beta_space_st[coord_reverse_ordering]
-            beta_space[space_to_spacetime_assign == st] <- beta_space_st
-         }
-
+         SSS = tau_beta * exp(-dist.space.mat / theta_beta)
+         VVV = diag(1 / sigma2 * X_S) + kronecker(diag(N.spacetime), solve(SSS))
+         VVV = solve(VVV)
+         beta_space = mvnfast::rmvn(1, VVV %*% XXX, VVV)[1, ]
          MMM = MMM + beta_space[Z_ID] * X
-
-
-         #Update tau_beta
-         tau_prop = stats::rlnorm(1, 
-                             log(tau_beta),
-                             tau.tune)
-         lik_prop <- 0
-         lik_cur <- 0
-         for (st in unique(spacetime.id)) {
-             beta_space_st <- beta_space[space_to_spacetime_assign == st]
-             beta_space_st <- beta_space_st[coord_ordering]
-             lik_prop <- lik_prop +
-                 sum(dnngp(y = beta_space_st,
-                           ordered_coords = ordered_coords,
-                           neighbors = neighbors,
-                           phi = tau_prop,
-                           r = theta_beta,
-                           log = T))
-             lik_cur <- lik_cur +
-                 sum(dnngp(y = beta_space_st,
-                           ordered_coords = ordered_coords,
-                           neighbors = neighbors,
-                           phi = tau_beta,
-                           r = theta_beta,
-                           log = T))
-         }
-
-
       
-         ratio = lik_prop + 
-             stats::dgamma(tau_prop, 
-                    tau.a, 
-                    tau.b, 
-                    log = T) + 
-             log(tau_prop) -
-             lik_cur - 
-             stats::dgamma(tau_beta, 
-                           tau.a, 
-                           tau.b, 
-                           log = T) - 
-             log(tau_beta)
-
-         if (log(stats::runif(1)) < ratio) {
-           tau_beta = tau_prop
-           tau.acc[2] = tau.acc[2] + 1
-         }
-
+         #update tau_beta
+         SSS = t(beta_space) %*% 
+             kronecker(diag(N.spacetime), 
+                       solve(exp(-dist.space.mat / theta_beta))) %*% 
+             beta_space
+         tau_beta = 1 / stats::rgamma(1, N.space * N.spacetime /2 + tau.a, SSS / 2 + tau.b)
+      
          #Update theta_beta
-         theta_prop = stats::rlnorm(1, 
-                                    log(theta_beta), 
-                                    theta.tune)
-         lik_prop <- 0
-         lik_cur <- 0
-         for (st in unique(spacetime.id)) {
-             beta_space_st <- beta_space[space_to_spacetime_assign == st]
-             beta_space_st <- beta_space_st[coord_ordering]
-             lik_prop <- lik_prop +
-                 sum(dnngp(y = beta_space_st,
-                           ordered_coords = ordered_coords,
-                           neighbors = neighbors,
-                           phi = tau_beta,
-                           r = theta_prop,
-                           log = T))
-             lik_cur <- lik_cur +
-                 sum(dnngp(y = beta_space_st,
-                           ordered_coords = ordered_coords,
-                           neighbors = neighbors,
-                           phi = tau_beta,
-                           r = theta_beta,
-                           log = T))
-         }
-
-
+         theta.prop = stats::rlnorm(1, log(theta_beta), theta.tune)
+         SSS.curr = tau_beta * kronecker(diag(N.spacetime), 
+                                         (exp(-dist.space.mat/theta_beta)))
+         SSS.prop = tau_beta * kronecker(diag(N.spacetime), 
+                                         (exp(-dist.space.mat/theta.prop)))
       
-         ratio = lik_prop + 
-             stats::dgamma(theta_prop, 
-                    theta.a, 
-                    theta.b, 
-                    log = T) + 
-             log(theta_prop) -
-             lik_cur - 
-             stats::dgamma(theta_beta, 
-                           theta.a, 
-                           theta.b, 
-                           log = T) - 
-             log(theta_beta)
+         lik.prop = mvtnorm::dmvnorm(beta_space, 
+                            rep(0,N.space*N.spacetime), 
+                            SSS.curr, 
+                            log = T)
+         lik.curr = mvtnorm::dmvnorm(beta_space, 
+                            rep(0, N.space * N.spacetime), 
+                            SSS.prop, 
+                            log = T)
+      
+         ratio = lik.prop + stats::dgamma(theta.prop,  
+                                   theta.a, 
+                                   theta.b, 
+                                   log = T) + 
+            log(theta.prop) -
+            lik.curr - 
+            stats::dgamma(theta_beta, 
+                   theta.a, 
+                   theta.b, 
+                   log = T) - 
+            log(theta_beta)
 
-         if (log(stats::runif(1)) < ratio) {
-           theta_beta = theta_prop
+         if(log(stats::runif(1)) < ratio) {
+           theta_beta = theta.prop
            theta.acc[2] = theta.acc[2] + 1
          }
        }

@@ -22,6 +22,7 @@ grm(
   n.iter = 25000,
   burn = 5000,
   thin = 4,
+  tau.tune = 0.2,
   tau.a = 0.5,
   tau.b = 0.005,
   omega.a = 0.5,
@@ -68,6 +69,8 @@ grm(
 \item{burn}{Number of pre-covergence simulations}
 
 \item{thin}{Save every thin'th simulation}
+
+\item{tau.tune}{Tau Metropolis-Hastings proposal tuning parameter, only used if nngp = T}
 
 \item{tau.a}{First tau prior hyperparameter}
 
