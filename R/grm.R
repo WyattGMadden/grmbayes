@@ -173,8 +173,9 @@ grm = function(Y,
         coord_ordering <- coord_list[["coord_ordering"]]
         coord_reverse_ordering <- coord_list[["coord_reverse_ordering"]]
 
-        ### get list of neighbors w.r.t. coord ordering
+        ### get list of neighbors & dist matrices w.r.t. coord ordering
         neighbors <- get_neighbors(ordered_coords, m = num_neighbors)
+        dist_matrices <- get_dist_matrices(ordered_coords, neighbors)
 
         ### space assignment to spacetime vector
         space_to_spacetime_assign <- rep(unique(spacetime.id), each = N.space)
@@ -521,21 +522,19 @@ grm = function(Y,
 
             for (i in (length(alpha_space_st) - 1):1) {
                 i_and_neighbors <- c(i, neighbors[[i]])
-                dist_space_mat_i <- as.matrix(stats::dist(coords_st_ord[i_and_neighbors, ],
-                                                          diag = TRUE,
-                                                          upper = TRUE))
+                dist_space_mat_i <- dist_matrices[[i]]
                 SSS_i <- tau_alpha * exp(- dist_space_mat_i / theta_alpha)
                 VVV_i = diag(1 / sigma2 * GtG_space_st_ord[i_and_neighbors]) + solve(SSS_i)
                 joint_cov = solve(VVV_i)
                 joint_mean <- joint_cov %*% XXX_st_ord[i_and_neighbors]
-                sigma_12_inv_sigma_22 <- joint_cov[1, 2:ncol(joint_cov)] %*% solve(joint_cov[2:ncol(joint_cov), 2:ncol(joint_cov)])
+                sigma_12_inv_sigma_22 <- joint_cov[1, -1] %*% solve(joint_cov[-1, -1])
                 cond_mean <- joint_mean[1] - 
                     sigma_12_inv_sigma_22 %*% 
                     (alpha_space_st[neighbors[[i]]] - 
-                     joint_mean[2:nrow(joint_mean)])
+                     joint_mean[-1])
                 cond_cov <- joint_cov[1, 1] - 
                     sigma_12_inv_sigma_22 %*% 
-                    joint_cov[2:nrow(joint_cov), 1]
+                    joint_cov[-1, 1]
                 alpha_space_st[i] <- stats::rnorm(1, cond_mean, sqrt(cond_cov))
             }
             #reverse order back to original
@@ -559,6 +558,7 @@ grm = function(Y,
                  sum(dnngp(y = alpha_space_st,
                            ordered_coords = ordered_coords,
                            neighbors = neighbors,
+                           dist_matrices = dist_matrices,
                            phi = tau_prop,
                            r = theta_alpha,
                            log = T))
@@ -566,6 +566,7 @@ grm = function(Y,
                  sum(dnngp(y = alpha_space_st,
                            ordered_coords = ordered_coords,
                            neighbors = neighbors,
+                           dist_matrices = dist_matrices,
                            phi = tau_alpha,
                            r = theta_alpha,
                            log = T))
@@ -604,6 +605,7 @@ grm = function(Y,
                  sum(dnngp(y = alpha_space_st,
                            ordered_coords = ordered_coords,
                            neighbors = neighbors,
+                           dist_matrices = dist_matrices,
                            phi = tau_alpha,
                            r = theta_prop,
                            log = T))
@@ -611,6 +613,7 @@ grm = function(Y,
                  sum(dnngp(y = alpha_space_st,
                            ordered_coords = ordered_coords,
                            neighbors = neighbors,
+                           dist_matrices = dist_matrices,
                            phi = tau_alpha,
                            r = theta_alpha,
                            log = T))
@@ -716,21 +719,19 @@ grm = function(Y,
 
             for (i in (length(beta_space_st) - 1):1) {
                 i_and_neighbors <- c(i, neighbors[[i]])
-                dist_space_mat_i <- as.matrix(stats::dist(coords_st_ord[i_and_neighbors, ],
-                                                          diag = TRUE,
-                                                          upper = TRUE))
+                dist_space_mat_i <- dist_matrices[[i]]
                 SSS_i <- tau_beta * exp(- dist_space_mat_i / theta_beta)
                 VVV_i = diag(1 / sigma2 * X_S_st_ord[i_and_neighbors]) + solve(SSS_i)
                 joint_cov = solve(VVV_i)
                 joint_mean <- joint_cov %*% XXX_st_ord[i_and_neighbors]
-                sigma_12_inv_sigma_22 <- joint_cov[1, 2:ncol(joint_cov)] %*% solve(joint_cov[2:ncol(joint_cov), 2:ncol(joint_cov)])
+                sigma_12_inv_sigma_22 <- joint_cov[1, -1] %*% solve(joint_cov[-1, -1])
                 cond_mean <- joint_mean[1] - 
                     sigma_12_inv_sigma_22 %*% 
                     (beta_space_st[neighbors[[i]]] - 
-                     joint_mean[2:nrow(joint_mean)])
+                     joint_mean[-1])
                 cond_cov <- joint_cov[1, 1] - 
                     sigma_12_inv_sigma_22 %*% 
-                    joint_cov[2:nrow(joint_cov), 1]
+                    joint_cov[-1, 1]
                 beta_space_st[i] <- stats::rnorm(1, cond_mean, sqrt(cond_cov))
             }
             #reverse order back to original
@@ -754,6 +755,7 @@ grm = function(Y,
                  sum(dnngp(y = beta_space_st,
                            ordered_coords = ordered_coords,
                            neighbors = neighbors,
+                           dist_matrices = dist_matrices,
                            phi = tau_prop,
                            r = theta_beta,
                            log = T))
@@ -761,6 +763,7 @@ grm = function(Y,
                  sum(dnngp(y = beta_space_st,
                            ordered_coords = ordered_coords,
                            neighbors = neighbors,
+                           dist_matrices = dist_matrices,
                            phi = tau_beta,
                            r = theta_beta,
                            log = T))
@@ -799,6 +802,7 @@ grm = function(Y,
                  sum(dnngp(y = beta_space_st,
                            ordered_coords = ordered_coords,
                            neighbors = neighbors,
+                           dist_matrices = dist_matrices,
                            phi = tau_beta,
                            r = theta_prop,
                            log = T))
@@ -806,6 +810,7 @@ grm = function(Y,
                  sum(dnngp(y = beta_space_st,
                            ordered_coords = ordered_coords,
                            neighbors = neighbors,
+                           dist_matrices = dist_matrices,
                            phi = tau_beta,
                            r = theta_beta,
                            log = T))
@@ -972,6 +977,17 @@ grm = function(Y,
                                           Mean = M.mean, 
                                           SD = M.sd))
     row.names(standardize.param) = NULL
+
+    nngp.info.save <- NULL
+
+    if (nngp){
+      nngp.info.save <- list(ordered.coords = ordered_coords,
+                             coord.ordering = coord_ordering,
+                             coord.reverse.ordering = coord_reverse_ordering,
+                             neighbors = neighbors,
+                             dist.matrices = dist_matrices,
+                             space.to.spacetime.assign = space_to_spacetime_assign)
+    }
     
     list(delta = delta.save, 
          gamma = gamma.save,
@@ -983,6 +999,7 @@ grm = function(Y,
          Y = Y.hat, 
          standardize.param = standardize.param,
          theta.acc = theta.acc,
-         tau.acc = tau.acc)
+         tau.acc = tau.acc,
+         nggp.info = nngp.info.save)
 }
 

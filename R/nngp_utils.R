@@ -40,6 +40,31 @@ get_neighbors <- function(ordered_coords, m) {
     return(neighbors)
 }
 
+#get neighbors from a reference set of ordered coordinates
+get_neighbors_ref <- function(ordered_coords, pred_coords, m){
+    full_coords <- rbind(ordered_coords, pred_coords)
+    full_dist_mat <- as.matrix(stats::dist(full_coords, 
+                                           upper = TRUE, 
+                                           diag = TRUE))
+    dist_mat_12 <- full_dist_mat[1:nrow(ordered_coords), (nrow(ordered_coords) + 1):nrow(full_coords)]
+    min_m_indices <- apply(dist_mat_12, 2, order)[1:m, ]
+    #convert matrix to list of column vectors
+    neighbors_pred <- lapply(seq_len(ncol(min_m_indices)), 
+                             function(i) min_m_indices[, i])
+    return(neighbors_pred)
+}
+
+get_dist_matrices <- function(ordered_coords, neighbors) {
+    dist_matrices <- list()
+    for (i in 1:nrow(ordered_coords)) {
+        neighbor_i <- neighbors[[i]]
+        neighbor_coords <- ordered_coords[c(i, neighbor_i), , drop = FALSE]
+        dist_matrices[[i]] <- as.matrix(stats::dist(neighbor_coords, 
+                                                    upper = TRUE, 
+                                                    diag = TRUE))
+    }
+    return(dist_matrices)
+}
 rnngp <- function(ordered_coords, neighbors, phi, r) {
     y <- rep(0, nrow(ordered_coords))
     y[nrow(ordered_coords)] <- stats::rnorm(1, 0, sqrt(exp_cov(0, phi, r)))
@@ -67,7 +92,7 @@ rnngp <- function(ordered_coords, neighbors, phi, r) {
 
 
 
-dnngp <- function(y, ordered_coords, neighbors, phi, r, log = FALSE) {
+dnngp <- function(y, ordered_coords, neighbors, dist_matrices, phi, r, log = FALSE) {
     d <- rep(0, nrow(ordered_coords))
     d[nrow(ordered_coords)] <- stats::dnorm(y[nrow(ordered_coords)], 
                                             0, 
@@ -75,19 +100,16 @@ dnngp <- function(y, ordered_coords, neighbors, phi, r, log = FALSE) {
                                             log = log)
     for (i in 1:(nrow(ordered_coords) - 1)) {
         neighbor_i <- neighbors[[i]]
-        neighbor_coords <- ordered_coords[neighbor_i, , drop = FALSE]
+        i_and_neighbors <- c(i, neighbor_i)
+        dist_space_mat_i <- dist_matrices[[i]]
+
+        joint_cov <- exp_cov(dist_space_mat_i, phi, r)
+
         neighbor_y <- y[neighbor_i]
-        y_cov <- exp_cov(0, phi, r)
-        cross_cov <- exp_cov(euc_dist(neighbor_coords[, "x"], neighbor_coords[, "y"], 
-                                      ordered_coords[i, "x"], ordered_coords[i, "y"]), 
-                             phi, r)
-        neighbor_cov <- exp_cov(as.matrix(stats::dist(neighbor_coords, 
-                                                      upper = TRUE, 
-                                                      diag = TRUE)),
-                                phi, r)
-        cross_neighbor_cov <- t(cross_cov) %*% solve(neighbor_cov) 
+        cross_neighbor_cov <- t(joint_cov[1, -1]) %*% solve(joint_cov[-1, -1])
+
         conditional_mean <- cross_neighbor_cov %*% neighbor_y
-        conditional_cov <- y_cov - cross_neighbor_cov %*% cross_cov
+        conditional_cov <- joint_cov[1, 1] - cross_neighbor_cov %*% joint_cov[1, -1]
         d[i] <- stats::dnorm(y[i], 
                              conditional_mean,
                              sqrt(conditional_cov),
