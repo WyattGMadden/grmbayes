@@ -195,8 +195,9 @@ grm_pred = function(grm.fit,
         } else if (!is.null(grm.fit$nngp.info)) {
 
 
+
+
             ###Create prediction distance matrix
-            browser()
             
             dist_dat_Y <- unique(cbind(space.id.Y, coords.Y))
             dist_dat_Y <- dist_dat_Y[order(dist_dat_Y$space.id.Y), ]
@@ -208,11 +209,16 @@ grm_pred = function(grm.fit,
 
             N.mon = nrow(locations.Y)
             N.cell = nrow(locations.pred)
+
+            nngp_info <- grm.fit$nngp.info
+            ordered_coords_Y <- nngp_info$ordered.coords
+            neighbors_pred <- get_neighbors_ref(ordered_coords = nngp_info$ordered.coords, 
+                                                locations.pred, 
+                                                nngp_info$num_neighbors)
+            dist_mats_pred <- get_dist_matrices_ref(ordered_coords = nngp_info$ordered.coords, 
+                                                    coords_pred = locations.pred,
+                                                    neighbors = neighbors_pred)
             
-            ####Predict alpha and beta at grid cells
-            XY = rbind(locations.Y, locations.pred)
-            D22 = as.matrix(stats::dist(locations.Y, diag = TRUE, upper = TRUE))
-            D12 = as.matrix(stats::dist(XY, diag = TRUE, upper = TRUE))[c(1:N.mon), -c(1:N.mon)]
             
             alpha_space_pred  = data.frame(expand.grid(1:N.space, 
                                                        1:N.spacetime))
@@ -233,64 +239,99 @@ grm_pred = function(grm.fit,
                 cat("Imputing Spatial Alphas\n") 
 
               }
+                for (m in 1:n.iter) {
+                    tau.m = grm.fit$others$tau.alpha[m]
+                    theta.m = grm.fit$others$theta.alpha[m]
+                    alpha.m = grm.fit$alpha.space[, paste0("Sample", m)]
+                    alpha.space.id <- grm.fit$alpha.space$space.id
+                    alpha.spacetime.id <- grm.fit$alpha.space$spacetime.id
 
-              for (m in 1:n.iter) {
-                  tau.m = grm.fit$others$tau.alpha[m]
-                  theta.m = grm.fit$others$theta.alpha[m]
-                  Sigma11.m = tau.m
-                  Sigma12.m = tau.m * exp(-1 / theta.m * D12)
-                  Sigma22.m = tau.m * exp(-1 / theta.m * D22)
-                  InvSigma22.m = solve(Sigma22.m)
-            
-                  for (j in 1:N.spacetime) {
-                      alpha.m = grm.fit$alpha.space[grm.fit$alpha.space$spacetime.id == j, 
-                                                    paste0("Sample", m)]
-                      alpha.mu.m = t(Sigma12.m) %*% InvSigma22.m %*% alpha.m
-                      alpha.cov.m = Sigma11.m - diag(t(Sigma12.m) %*% InvSigma22.m %*% Sigma12.m)
-                      alpha.m.post = stats::rnorm(N.cell, alpha.mu.m, sqrt(alpha.cov.m))
-                      alpha_space_pred[alpha_space_pred$spacetime.id == j, 
-                                       paste0("Sample",m)] = alpha.m.post
-                  } #End of locations
-                
-                  if (verbose == TRUE) {
-                      if (m %% (n.iter / 10) == 0) {
-                          cat(paste("     Iteration", m, "of", n.iter, "\n"))
-                      }
-                  }
-              }
+                    for (j in 1:N.spacetime) {
+
+                        alpha.m.j <- alpha.m[alpha.spacetime.id == j]
+                        alpha.m.j.ord <- alpha.m.j[nngp_info$coord.ordering]
+                        alpha.j.space.id.pred <- unique(alpha_space_pred$space.id[alpha_space_pred$spacetime.id == j])
+                        alpha.m.j.pred <- rep(0, length(alpha.j.space.id.pred))
+
+                        for (i in 1:length(alpha.j.space.id.pred)) {
+                            sigma.m.j.i <- exp_cov(dist_mats_pred[[i]], phi = tau.m, r = theta.m)
+                            inv.sigma.m.j.i <- solve(sigma.m.j.i[-1, -1])
+                            alpha.mu.m.j.i <- sigma.m.j.i[1, -1] %*% 
+                                inv.sigma.m.j.i %*% 
+                                alpha.m.j.ord[neighbors_pred[[i]]]
+
+                            alpha.cov.m.j.i <- sigma.m.j.i[1, 1] - 
+                                sigma.m.j.i[1, -1] %*% 
+                                inv.sigma.m.j.i %*% 
+                                sigma.m.j.i[-1, 1]
+
+                            alpha.m.j.pred[i] <- stats::rnorm(1, 
+                                                              alpha.mu.m.j.i, 
+                                                              sqrt(alpha.cov.m.j.i))
+
+                        }
+                        alpha_space_pred[alpha_space_pred$spacetime.id == j,
+                                         paste0("Sample", m)] <- alpha.m.j.pred
+                    } #End of locations
+
+                    if (verbose == TRUE) {
+                        if (m %% (n.iter / 10) == 0) {
+                            cat(paste("     Iteration", m, "of", n.iter, "\n"))
+                        }
+                    }
+                }
             }
              
             #For betas's
-            if (include.multiplicative.annual.resid) { if (verbose == TRUE) {
+            if (include.multiplicative.annual.resid) { 
+
+                if (verbose == TRUE) {
                     cat("Imputing Spatial Betas\n") 
                 }
 
                 for (m in 1:n.iter) {
+
                     tau.m = grm.fit$others$tau.beta[m]
-                    theta.m = grm.fit$others$theta.beta[m] 
-                    Sigma11.m = tau.m
-                    Sigma12.m = tau.m * exp(-1 / theta.m * D12)
-                    Sigma22.m = tau.m * exp(-1 / theta.m * D22)
-                    InvSigma22.m = solve(Sigma22.m)
-              
+                    theta.m = grm.fit$others$theta.beta[m]
+                    beta.m = grm.fit$beta.space[, paste0("Sample", m)]
+                    beta.space.id <- grm.fit$beta.space$space.id
+                    beta.spacetime.id <- grm.fit$beta.space$spacetime.id
+
                     for (j in 1:N.spacetime) {
-                        beta.m = grm.fit$beta.space[grm.fit$beta.space$spacetime.id == j, 
-                                            paste0("Sample", m)]
-                        beta.mu.m = t(Sigma12.m) %*% InvSigma22.m %*% beta.m
-                        beta.cov.m = Sigma11.m - diag(t(Sigma12.m) %*% 
-                                                      InvSigma22.m %*% 
-                                                      Sigma12.m)
-                        beta.m.post = stats::rnorm(N.cell, beta.mu.m, sqrt(beta.cov.m))
-                        beta_space_pred[beta_space_pred$spacetime.id == j, 
-                                        paste0("Sample", m)] = beta.m.post
+
+                        beta.m.j <- beta.m[beta.spacetime.id == j]
+                        beta.m.j.ord <- beta.m.j[nngp_info$coord.ordering]
+                        beta.j.space.id.pred <- unique(beta_space_pred$space.id[beta_space_pred$spacetime.id == j])
+                        beta.m.j.pred <- rep(0, length(beta.j.space.id.pred))
+
+                        for (i in 1:length(beta.j.space.id.pred)) {
+                            sigma.m.j.i <- exp_cov(dist_mats_pred[[i]], phi = tau.m, r = theta.m)
+                            inv.sigma.m.j.i <- solve(sigma.m.j.i[-1, -1])
+                            beta.mu.m.j.i <- sigma.m.j.i[1, -1] %*% 
+                                inv.sigma.m.j.i %*% 
+                                beta.m.j.ord[neighbors_pred[[i]]]
+
+                            beta.cov.m.j.i <- sigma.m.j.i[1, 1] - 
+                                sigma.m.j.i[1, -1] %*% 
+                                inv.sigma.m.j.i %*% 
+                                sigma.m.j.i[-1, 1]
+
+                            beta.m.j.pred[i] <- stats::rnorm(1, 
+                                                              beta.mu.m.j.i, 
+                                                              sqrt(beta.cov.m.j.i))
+
+                        }
+                        beta_space_pred[beta_space_pred$spacetime.id == j,
+                                         paste0("Sample", m)] <- beta.m.j.pred
                     } #End of locations
                     if (verbose == TRUE) {
                         if (m %% (n.iter / 10) == 0) {
                             cat(paste("     Iteration", m, "of", n.iter), "\n")
                         }
                     }
-            
-                }#End of iterations
+
+                }#End of iteration
+
             }
 
         }
@@ -331,44 +372,44 @@ grm_pred = function(grm.fit,
 
     }
   
-  ####Make Predictions
-  results = data.frame(time.id, space.id, spacetime.id)
-  results$estimate = 0
-  results$sd = 0
-  
-  id.temp.pred = paste0(alpha_space_pred$space.id, 
-                        "_", 
-                        alpha_space_pred$spacetime.id)
-
-  id.temp = paste0(space.id, "_", spacetime.id)
-  
-  delta = as.matrix(grm.fit$delta)
-  gamma = as.matrix(grm.fit$gamma)
-
-  
-  
-  for (m in 1:n.iter) {
-      intercept = grm.fit$others$alpha0[m] + 
-          grm.fit$alpha.time[time.id, m + 1] + 
-          alpha_space_pred[match(id.temp, id.temp.pred), m + 2]
-      slope = grm.fit$others$beta0[m] + 
-          grm.fit$beta.time[time.id, m + 1] + 
-          beta_space_pred[match(id.temp, id.temp.pred), m + 2]
-      fix.L = L.pred %*% t(as.matrix(grm.fit$gamma[m, ]))
-      fix.M = M.pred %*% t(as.matrix(grm.fit$delta[m, ]))
+    ####Make Predictions
+    results = data.frame(time.id, space.id, spacetime.id)
+    results$estimate = 0
+    results$sd = 0
     
-      pred.mu = intercept + slope * X.pred + 
-          as.vector(fix.L) + as.vector(fix.M)
-      pred.mu = pred.mu + stats::rnorm(length(pred.mu), 
-                                       0, 
-                                       sqrt(grm.fit$others$sigma2[m])) 
-      results$estimate = results$estimate + pred.mu / n.iter
-      results$sd = results$sd + pred.mu^2 / n.iter
-  }
+    id.temp.pred = paste0(alpha_space_pred$space.id, 
+                          "_", 
+                          alpha_space_pred$spacetime.id)
 
-  results$sd = sqrt((results$sd - results$estimate^2))
+    id.temp = paste0(space.id, "_", spacetime.id)
+    
+    delta = as.matrix(grm.fit$delta)
+    gamma = as.matrix(grm.fit$gamma)
+
+    
+    
+    for (m in 1:n.iter) {
+        intercept = grm.fit$others$alpha0[m] + 
+            grm.fit$alpha.time[time.id, m + 1] + 
+            alpha_space_pred[match(id.temp, id.temp.pred), m + 2]
+        slope = grm.fit$others$beta0[m] + 
+            grm.fit$beta.time[time.id, m + 1] + 
+            beta_space_pred[match(id.temp, id.temp.pred), m + 2]
+        fix.L = L.pred %*% t(as.matrix(grm.fit$gamma[m, ]))
+        fix.M = M.pred %*% t(as.matrix(grm.fit$delta[m, ]))
+      
+        pred.mu = intercept + slope * X.pred + 
+            as.vector(fix.L) + as.vector(fix.M)
+        pred.mu = pred.mu + stats::rnorm(length(pred.mu), 
+                                         0, 
+                                         sqrt(grm.fit$others$sigma2[m])) 
+        results$estimate = results$estimate + pred.mu / n.iter
+        results$sd = results$sd + pred.mu^2 / n.iter
+    }
+
+    results$sd = sqrt((results$sd - results$estimate^2))
 
 
-  return(results)
+    return(results)
 
 }

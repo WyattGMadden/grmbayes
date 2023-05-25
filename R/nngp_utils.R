@@ -65,6 +65,18 @@ get_dist_matrices <- function(coords, neighbors) {
     }
     return(dist_matrices)
 }
+get_dist_matrices_ref <- function(ordered_coords, coords_pred, neighbors) {
+    dist_matrices <- list()
+    for (i in 1:nrow(coords_pred)) {
+        neighbor_i <- neighbors[[i]]
+        neighbor_coords <- rbind(coords_pred[i, , drop = FALSE], 
+                                 ordered_coords[neighbor_i, , drop = FALSE])
+        dist_matrices[[i]] <- as.matrix(stats::dist(neighbor_coords, 
+                                                    upper = TRUE, 
+                                                    diag = TRUE))
+    }
+    return(dist_matrices)
+}
 rnngp <- function(ordered_coords, neighbors, phi, r) {
     y <- rep(0, nrow(ordered_coords))
     y[nrow(ordered_coords)] <- stats::rnorm(1, 0, sqrt(exp_cov(0, phi, r)))

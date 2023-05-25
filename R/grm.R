@@ -994,7 +994,8 @@ grm = function(Y,
                              coord.reverse.ordering = coord_reverse_ordering,
                              neighbors = neighbors,
                              dist.matrices = dist_matrices,
-                             space.to.spacetime.assign = space_to_spacetime_assign)
+                             space.to.spacetime.assign = space_to_spacetime_assign,
+                             num_neighbors = num_neighbors)
     }
     
     list(delta = delta.save, 
@@ -1008,6 +1009,6 @@ grm = function(Y,
          standardize.param = standardize.param,
          theta.acc = theta.acc,
          tau.acc = tau.acc,
-         nggp.info = nngp.info.save)
+         nngp.info = nngp.info.save)
 }
 
