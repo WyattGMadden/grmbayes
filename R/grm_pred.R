@@ -194,7 +194,10 @@ grm_pred = function(grm.fit,
 
         } else if (!is.null(grm.fit$nngp.info)) {
 
+
             ###Create prediction distance matrix
+            browser()
+            
             dist_dat_Y <- unique(cbind(space.id.Y, coords.Y))
             dist_dat_Y <- dist_dat_Y[order(dist_dat_Y$space.id.Y), ]
             locations.Y <- dist_dat_Y[, c("x", "y")]

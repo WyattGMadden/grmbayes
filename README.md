@@ -35,13 +35,12 @@ ctm_fit <- grm(Y = ctm_pm25$pm25,
                n.iter = 500,
                burn = 100,
                thin = 4,
-               nngp = F,
+               nngp = T,
                num_neighbors = 4,
                coords = ctm_pm25[, c("x", "y")],
                space.id = ctm_pm25$space_id,
                time.id = ctm_pm25$time_id,
                spacetime.id = ctm_pm25$spacetime_id)
-
 
 
 
@@ -133,7 +132,7 @@ maia_fit_cv <- grm_cv(Y = maia_pm25$pm25,
 ``` r
 ?ctm_preds
 
-ctm_pred <- profvis({grm_pred(grm.fit = ctm_fit,
+ctm_pred <- grm_pred(grm.fit = ctm_fit,
                      X.pred = ctm_preds$ctm,
                      L.pred = ctm_preds[, c("elevation", "forestcover",
                                             "hwy_length", "lim_hwy_length", 
@@ -148,7 +147,7 @@ ctm_pred <- profvis({grm_pred(grm.fit = ctm_fit,
                      include.additive.annual.resid = T,
                      include.multiplicative.annual.resid = T,
                      n.iter = 100,
-                     verbose = T)})
+                     verbose = T)
 
 
 

@@ -54,11 +54,11 @@ get_neighbors_ref <- function(ordered_coords, pred_coords, m){
     return(neighbors_pred)
 }
 
-get_dist_matrices <- function(ordered_coords, neighbors) {
+get_dist_matrices <- function(coords, neighbors) {
     dist_matrices <- list()
-    for (i in 1:nrow(ordered_coords)) {
+    for (i in 1:nrow(coords)) {
         neighbor_i <- neighbors[[i]]
-        neighbor_coords <- ordered_coords[c(i, neighbor_i), , drop = FALSE]
+        neighbor_coords <- coords[c(i, neighbor_i), , drop = FALSE]
         dist_matrices[[i]] <- as.matrix(stats::dist(neighbor_coords, 
                                                     upper = TRUE, 
                                                     diag = TRUE))
