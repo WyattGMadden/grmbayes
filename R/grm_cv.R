@@ -38,7 +38,8 @@ grm_cv = function(Y,
                   theta.b = 0.05,
                   sigma.a = 0.001, 
                   sigma.b = 0.001,
-                  verbose = TRUE) {
+                  verbose = TRUE,
+                  verbose.iter = 1000) {
 
     cv.id <- cv.object$cv.id
 
@@ -116,7 +117,8 @@ grm_cv = function(Y,
                      theta.b = theta.b,
                      sigma.a = sigma.a, 
                      sigma.b = sigma.b,
-                     verbose = verbose)
+                     verbose = verbose,
+                     verbose.iter = verbose.iter)
     
         in_sample <- if (cv.object$type == "ordinary") {
 
