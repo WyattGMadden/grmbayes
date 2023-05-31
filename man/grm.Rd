@@ -32,7 +32,8 @@ grm(
   theta.b = 0.05,
   sigma.a = 0.001,
   sigma.b = 0.001,
-  verbose = TRUE
+  verbose = TRUE,
+  verbose.iter = 1000
 )
 }
 \arguments{
@@ -91,6 +92,8 @@ grm(
 \item{sigma.b}{Second sigma prior hyperparameter}
 
 \item{verbose}{Print MCMC output}
+
+\item{verbose.iter}{print MCMC output step number each 'verbose.iter' iterations}
 }
 \value{
 A list containing MCMC output

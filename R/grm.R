@@ -31,6 +31,7 @@
 #' @param sigma.a First sigma prior hyperparameter
 #' @param sigma.b Second sigma prior hyperparameter
 #' @param verbose Print MCMC output
+#' @param verbose.iter print MCMC output step number each 'verbose.iter' iterations
 #'
 #' @return A list containing MCMC output 
 #'
@@ -66,7 +67,8 @@ grm = function(Y,
                theta.b = 0.05,
                sigma.a = 0.001, 
                sigma.b = 0.001,
-               verbose = TRUE) {
+               verbose = TRUE,
+               verbose.iter = 1000) {
  
     ####################################
     ### Get some summary statistics ####
@@ -403,7 +405,7 @@ grm = function(Y,
     for (i in 1:n.iter) {
 
         if (verbose == TRUE) {
-            if ((i %% 1000) == 0) print(paste("     Iteration", i, "of", n.iter))
+            if ((i %% verbose.iter) == 0) print(paste("     Iteration", i, "of", n.iter))
         }
     
         ###Update alpha0 and beta0

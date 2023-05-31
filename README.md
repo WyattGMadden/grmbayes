@@ -24,6 +24,7 @@ devtools::install_github("WyattGMadden/ensembleDownscaleR")
 
 ``` r
 library(ensembleDownscaleR)
+
 ?ctm_pm25
 
 ctm_fit <- grm(Y = ctm_pm25$pm25,
@@ -32,11 +33,11 @@ ctm_fit <- grm(Y = ctm_pm25$pm25,
                                 "hwy_length", "lim_hwy_length", 
                                 "local_rd_length", "point_emi_any")],
                M = ctm_pm25[, c("tmp", "wind")],
-               n.iter = 500,
+               n.iter = 5000,
                burn = 100,
                thin = 4,
                nngp = T,
-               num_neighbors = 4,
+               num_neighbors = 6,
                coords = ctm_pm25[, c("x", "y")],
                space.id = ctm_pm25$space_id,
                time.id = ctm_pm25$time_id,
@@ -48,13 +49,13 @@ cv_id_ctm_spat <- create_cv(space.id = ctm_pm25$space_id,
                             time.id = ctm_pm25$time_id)
 
 cv_id_ctm_ord <- create_cv(space.id = ctm_pm25$space_id,
-                       time.id = ctm_pm25$time_id,
-                       type = "ordinary")
+                           time.id = ctm_pm25$time_id,
+                           type = "ordinary")
 
 cv_id_ctm_spcl <- create_cv(space.id = ctm_pm25$space_id,
-                       time.id = ctm_pm25$time_id,
-                       type = "spatial_clustered",
-                       coords = ctm_pm25[, c("x", "y")])
+                            time.id = ctm_pm25$time_id,
+                            type = "spatial_clustered",
+                            coords = ctm_pm25[, c("x", "y")])
 
 
 
@@ -103,6 +104,8 @@ maia_fit <- grm(Y = maia_pm25$pm25,
                 M = maia_pm25[, c("tmp", "wind", "cmaq", "tempaod", 
                                   "windaod", "elevationaod")],
                 n.iter = 500,
+                nngp = T,
+                num_neighbors = 6,
                 burn = 100,
                 thin = 4,
                 coords = maia_pm25[, c("x", "y")],
