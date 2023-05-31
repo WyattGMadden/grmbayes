@@ -18,6 +18,8 @@ grm_cv(
   include.additive.annual.resid = T,
   include.multiplicative.weekly.resid = T,
   include.multiplicative.annual.resid = T,
+  nngp = F,
+  num_neighbors = 10,
   n.iter = 25000,
   burn = 5000,
   thin = 4,
@@ -60,6 +62,10 @@ grm_cv(
 \item{include.multiplicative.weekly.resid}{Include multiplicative temporal (weekly) residual bias not explained by other inputes}
 
 \item{include.multiplicative.annual.resid}{Include multiplicative spatial (weekly) residual bias not explained by other inputes}
+
+\item{nngp}{Use nearest neighbor Gaussian process (NNGP) in place of Gaussian process}
+
+\item{num_neighbors}{Number of nearest neighbors to use in NNGP}
 
 \item{n.iter}{Number of iterations used in predictions. Must be <= than post-thined and burned iterations from grm.fit}
 
