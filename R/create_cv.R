@@ -46,7 +46,7 @@ create_cv <- function(space.id,
             # make sure no spatial location is not in some but not all folds
             if (sum(space_id_cv == i) < num.folds) {
 
-                cv_id[space_id_cv == i] <- rep(0, sum(space_id_cv == 1))
+                cv_id[space_id_cv == i] <- rep(0, sum(space_id_cv == i))
 
             } else {
 
