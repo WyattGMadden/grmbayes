@@ -17,6 +17,8 @@
 #' @param include.multiplicative.annual.resid Include multiplicative spatial (weekly) residual bias not explained by other inputes
 #' @param nngp Use nearest neighbor Gaussian process (NNGP) in place of Gaussian process
 #' @param num_neighbors Number of nearest neighbors to use in NNGP
+#' @param discrete.theta.alpha.values Values of theta (GP intercept range parameter) to use in discrete uniform prior. If NULL (default) continuous theta prior is used
+#' @param discrete.theta.beta.values Values of theta (GP slope range parameter) to use in discrete uniform prior. If NULL (default) continuous theta prior is used
 #' @param n.iter Number of iterations used in predictions. 
 #' @param burn Number of pre-covergence simulations
 #' @param thin Save every thin'th simulation
@@ -54,6 +56,8 @@ grm = function(Y,
                include.multiplicative.annual.resid = T,
                nngp = F,
                num_neighbors = 10,
+               discrete.theta.alpha.values = NULL,
+               discrete.theta.beta.values = NULL,
                n.iter = 25000,
                burn = 5000,
                thin = 4,
@@ -179,8 +183,23 @@ grm = function(Y,
         neighbors <- get_neighbors(ordered_coords, m = num_neighbors)
         dist_matrices <- get_dist_matrices(ordered_coords, neighbors)
 
-        ### space assignment to spacetime vector
-        space_to_spacetime_assign <- rep(unique(spacetime.id), each = N.space)
+    }
+
+    ##################################################################
+    ### Pre-compute quantities for discrete theta (gp range parameter)
+    ##################################################################
+
+    if (!is.null(discrete.theta.alpha.values) | !is.null(discrete.theta.beta.values)) {
+        kernals <- lapply(discrete.theta.beta.values,
+                          function(x) exp(-dist.space.mat / x))
+        kernals_inv <- lapply(kernals, solve)
+        kernals_chol <- lapply(kernals, 
+                               function(x) t(chol(x)))
+        kernals_chol_inv <- lapply(kernals_chol, 
+                                   function(x) solve(x))
+        kernals_det <- lapply(kernals, 
+                              function(x) as.numeric(determinant(x)$modulus))
+
     }
 
 
@@ -188,6 +207,9 @@ grm = function(Y,
     ####################################################
     ### Pre-calculate quantities to save computation ###
     ####################################################
+
+    ### space assignment to spacetime vector
+    space_to_spacetime_assign <- rep(unique(spacetime.id), each = N.space)
     
     ###Indicator Matrix for Time
     Gamma_time = matrix(0, nrow = N, ncol = N.time)
@@ -514,6 +536,7 @@ grm = function(Y,
             XXX = 1 / sigma2 * t(Gamma_space) %*% RRR
 
             alpha_space <- rep(0, N.space * N.spacetime)
+
             #calculate separately for each spacetime
             for (st in unique(spacetime.id)) {
                 XXX_st <- XXX[space_to_spacetime_assign == st, , drop = FALSE]
@@ -651,40 +674,59 @@ grm = function(Y,
         }
       
         #Update spatial coefficent for AOD if GP
-        if (include.multiplicative.annual.resid & !nngp) {
+        if (include.multiplicative.annual.resid & !nngp & is.null(discrete.theta.beta.values)) {
+
             MMM = MMM - beta_space[Z_ID] * X
             RRR = Y - MMM
             XXX = 1 / sigma2 * t(Gamma_space) %*% (X * RRR)
-            SSS = tau_beta * exp(-dist.space.mat / theta_beta)
-            VVV = diag(1 / sigma2 * X_S) + kronecker(diag(N.spacetime),
-                                                     solve(SSS))
-            VVV = solve(VVV)
-            beta_space = as.vector(mvnfast::rmvn(1, VVV %*% XXX, VVV))
+            kern = exp(-dist.space.mat / theta_beta)
+            kern_inv = solve(kern)
+            SSS = tau_beta * kern
+            SSS_inv = (1 / tau_beta) * kern_inv
+            for (st in unique(spacetime.id)) {
+                X_S_st = X_S[space_to_spacetime_assign == st]
+                XXX_st = XXX[space_to_spacetime_assign == st]
+                VVV_st = diag(1 / sigma2 * X_S_st)
+                VVV_st = VVV_st + SSS_inv
+                VVV_inv_st = solve(VVV_st)
+                beta_space_st = as.vector(mvnfast::rmvn(1, VVV_inv_st %*% XXX_st, 
+                                                        VVV_inv_st))
+                beta_space[space_to_spacetime_assign == st] <- beta_space_st
+            }
             MMM = MMM + beta_space[Z_ID] * X
 
       
             #update tau_beta
-            SSS = t(beta_space) %*% 
-                kronecker(diag(N.spacetime),
-                          solve(exp(-dist.space.mat / theta_beta))) %*% 
-                beta_space
+            SSS = 0
+            for (st in unique(spacetime.id)) {
+                beta_space_st = beta_space[space_to_spacetime_assign == st]
+                SSS_st = t(beta_space_st) %*% 
+                    kern_inv %*% 
+                    beta_space_st
+                SSS = SSS + SSS_st
+            }
             tau_beta = 1 / stats::rgamma(1, N.space * N.spacetime /2 + tau.a, SSS / 2 + tau.b)
       
             #Update theta_beta
             theta.prop = stats::rlnorm(1, log(theta_beta), theta.tune)
-            SSS.curr = tau_beta * kronecker(diag(N.spacetime), 
-                                            (exp(-dist.space.mat/theta_beta)))
-            SSS.prop = tau_beta * kronecker(diag(N.spacetime),
-                                            (exp(-dist.space.mat/theta.prop)))
-      
-            lik.prop = mvtnorm::dmvnorm(beta_space, 
-                               rep(0,N.space*N.spacetime), 
-                               SSS.curr, 
-                               log = T)
-            lik.curr = mvtnorm::dmvnorm(beta_space, 
-                               rep(0, N.space * N.spacetime), 
-                               SSS.prop, 
-                               log = T)
+            SSS.curr = tau_beta * kern
+            SSS.prop = tau_beta * exp(-dist.space.mat / theta.prop)
+
+            lik.curr = 0
+            lik.prop = 0
+            for (st in unique(spacetime.id)) {
+                beta_space_st = beta_space[space_to_spacetime_assign == st]
+                lik.prop_st = mvtnorm::dmvnorm(beta_space_st, 
+                                               rep(0, N.space), 
+                                               SSS.prop, 
+                                               log = T)
+                lik.curr_st = mvtnorm::dmvnorm(beta_space_st,
+                                               rep(0, N.space), 
+                                               SSS.curr, 
+                                               log = T)
+                lik.prop = lik.prop + lik.prop_st
+                lik.curr = lik.curr + lik.curr_st
+            }
       
             ratio = lik.prop + 
                 stats::dgamma(theta.prop,  
@@ -706,7 +748,7 @@ grm = function(Y,
         }
 
         #Update spatial coefficent for AOD if NNGP
-        if (include.multiplicative.annual.resid & nngp) {
+        if (include.multiplicative.annual.resid & nngp & is.null(discrete.theta.beta.values)) {
             MMM = MMM - beta_space[Z_ID] * X
             RRR = Y - MMM
             XXX = 1 / sigma2 * t(Gamma_space) %*% (X * RRR)
@@ -843,6 +885,101 @@ grm = function(Y,
 
             if (log(stats::runif(1)) < ratio) {
                 theta_beta = theta_prop
+                theta.acc[2] = theta.acc[2] + 1
+            }
+        }
+
+        #Update spatial coefficent for AOD if discrete theta (GP range parameter)
+        if (include.multiplicative.annual.resid & !nngp & !is.null(discrete.theta.beta.values)) {
+            which_theta_beta_curr = 2
+            theta_beta_curr = discrete.theta.beta.values[which_theta_beta_curr]
+
+            kern_curr = kernals[[which_theta_beta_curr]]
+            kern_inv_curr = kernals_inv[[which_theta_beta_curr]]
+            kern_chol_curr = kernals_chol[[which_theta_beta_curr]]
+            kern_chol_inv_curr = kernals_chol_inv[[which_theta_beta_curr]]
+            kern_det_curr = kernals_det[[which_theta_beta_curr]]
+
+
+            MMM = MMM - beta_space[Z_ID] * X
+            RRR = Y - MMM
+            XXX = 1 / sigma2 * t(Gamma_space) %*% (X * RRR)
+            kern = exp(-dist.space.mat / theta_beta)
+            kern_inv = solve(kern_curr)
+            SSS = tau_beta * kern_curr
+            SSS_inv = (1 / tau_beta) * kern_inv_curr
+            for (st in unique(spacetime.id)) {
+                X_S_st = X_S[space_to_spacetime_assign == st]
+                XXX_st = XXX[space_to_spacetime_assign == st]
+                VVV_st = diag(1 / sigma2 * X_S_st)
+                VVV_st = VVV_st + (1 / tau_beta) * kern_inv_curr
+                VVV_inv_st = solve(VVV_st)
+                beta_space_st = as.vector(mvnfast::rmvn(1, VVV_inv_st %*% XXX_st, 
+                                                        VVV_inv_st))
+                beta_space[space_to_spacetime_assign == st] <- beta_space_st
+            }
+            MMM = MMM + beta_space[Z_ID] * X
+
+      
+            #update tau_beta
+            SSS = 0
+            for (st in unique(spacetime.id)) {
+                beta_space_st = beta_space[space_to_spacetime_assign == st]
+                SSS_st = t(beta_space_st) %*% 
+                    kern_inv_curr %*% 
+                    beta_space_st
+                SSS = SSS + SSS_st
+            }
+            tau_beta = 1 / stats::rgamma(1, N.space * N.spacetime /2 + tau.a, SSS / 2 + tau.b)
+      
+            #Update theta_beta
+            which_theta_beta_prop <- sample(1:length(discrete.theta.beta.values), 1)
+            which_theta_beta_prop = 3
+            theta_beta_prop = discrete.theta.beta.values[which_theta_beta_prop]
+            kern_prop = kernals[[which_theta_beta_prop]]
+            kern_inv_prop = kernals_inv[[which_theta_beta_prop]]
+            kern_chol_prop = kernals_chol[[which_theta_beta_prop]]
+            kern_chol_inv_prop = kernals_chol_inv[[which_theta_beta_prop]]
+            kern_det_prop = kernals_det[[which_theta_beta_prop]]
+
+            SSS_chol_curr = sqrt(tau_beta) * kern_chol_curr
+            SSS_det_curr = ncol(kern_curr) * log(tau_beta) + kern_det_curr
+            SSS_chol_inv_curr = (1 / sqrt(tau_beta)) * kern_inv_curr
+
+            SSS_chol_prop = sqrt(tau_beta) * kern_chol_prop
+            SSS_det_prop = ncol(kern_prop) * log(tau_beta) + kern_det_prop
+            SSS_chol_inv_prop = (1 / sqrt(tau_beta)) * kern_inv_prop
+
+            lik.curr = 0
+            lik.prop = 0
+
+            for (st in unique(spacetime.id)) {
+                beta_space_st = beta_space[space_to_spacetime_assign == st]
+                lik.curr_st = d_mvn_chol_uvn(beta_space_st, 
+                                             SSS_chol_inv_curr, 
+                                             SSS_det_curr)
+                lik.prop_st = d_mvn_chol_uvn(beta_space_st, 
+                                             SSS_chol_inv_prop, 
+                                             SSS_det_prop)
+                lik.curr = lik.curr + lik.curr_st
+                lik.prop = lik.prop + lik.prop_st
+            }
+
+            ratio = lik.prop + 
+                stats::dgamma(theta.prop,  
+                              theta.a, 
+                              theta.b, 
+                              log = T) + 
+                log(theta.prop) -
+                lik.curr - 
+                stats::dgamma(theta_beta, 
+                              theta.a, 
+                              theta.b, 
+                              log = T) - 
+                log(theta_beta)
+
+            if(log(stats::runif(1)) < ratio) {
+                theta_beta = theta.prop
                 theta.acc[2] = theta.acc[2] + 1
             }
         }
