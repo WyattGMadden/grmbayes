@@ -38,31 +38,75 @@ devtools::install_github("WyattGMadden/ensembleDownscaleR")
 library(ensembleDownscaleR)
 
 ?ctm_pm25
-
 ctm_fit <- grm(Y = ctm_pm25$pm25,
                X = ctm_pm25$ctm,
                L = ctm_pm25[, c("elevation", "forestcover",
                                 "hwy_length", "lim_hwy_length", 
                                 "local_rd_length", "point_emi_any")],
                M = ctm_pm25[, c("tmp", "wind")],
-               n.iter = 5000,
+               n.iter = 1000,
                burn = 100,
                thin = 4,
-               nngp = T,
-               num_neighbors = 6,
+               nngp = F,
+               #discrete.theta.beta.values = seq(1, 150, 1),
+#               num_neighbors = 6,
                coords = ctm_pm25[, c("x", "y")],
                space.id = ctm_pm25$space_id,
                time.id = ctm_pm25$time_id,
-               spacetime.id = ctm_pm25$spacetime_id)
+               spacetime.id = ctm_pm25$spacetime_id,
+               verbose.iter = 10)
+
+summary(ctm_fit$others$theta.beta[100:225])
+
+hist(ctm_fit$others$theta.beta, breaks = 100)
+summary(ctm_fit$others$theta.beta)
+
+test <- list(matrix(1, ncol = 3, nrow = 3), 
+     matrix(2, ncol = 3, nrow = 3),
+     matrix(3, ncol = 3, nrow = 3)) 
+
+test 
+lapply(test, function(x) x + x)
+
+ctm_fit_dis <- grm(Y = ctm_pm25$pm25,
+               X = ctm_pm25$ctm,
+               L = ctm_pm25[, c("elevation", "forestcover",
+                                "hwy_length", "lim_hwy_length", 
+                                "local_rd_length", "point_emi_any")],
+               M = ctm_pm25[, c("tmp", "wind")],
+               n.iter = 10000,
+               burn = 2000,
+               thin = 4,
+               nngp = F,
+               discrete.theta.beta.values = seq(1, 20, 1),
+               discrete.theta.gibbs = T,
+#               num_neighbors = 6,
+               coords = ctm_pm25[, c("x", "y")],
+               space.id = ctm_pm25$space_id,
+               time.id = ctm_pm25$time_id,
+               spacetime.id = ctm_pm25$spacetime_id,
+               verbose.iter = 10)
 
 
+str(ctm_fit_dis$others$theta.beta)
+hist(ctm_fit_dis$others$theta.beta, breaks = 100)
+summary(ctm_fit_dis$others$theta.beta)
+tibble(x = 1:length(ctm_fit_dis$others$theta.beta), 
+       y = ctm_fit_dis$others$theta.beta) %>%
+    ggplot(aes(x = x, y = y)) +
+    geom_line()
+library(tidyverse)
+tibble(x = 1:length(ctm_fit$others$theta.beta), 
+       y = ctm_fit$others$theta.beta) %>%
+    ggplot(aes(x = x, y = y)) +
+    geom_line()
+ctm_fit$theta.acc
 
 cv_id_ctm_spat <- create_cv(space.id = ctm_pm25$space_id,
                             time.id = ctm_pm25$time_id)
 
 cv_id_ctm_ord <- create_cv(space.id = ctm_pm25$space_id,
-                           time.id = ctm_pm25$time_id,
-                           type = "ordinary")
+                           time.id = ctm_pm25$time_id, type = "ordinary")
 
 cv_id_ctm_spcl <- create_cv(space.id = ctm_pm25$space_id,
                             time.id = ctm_pm25$time_id,
@@ -72,7 +116,7 @@ cv_id_ctm_spcl <- create_cv(space.id = ctm_pm25$space_id,
 
 
 ctm_fit_cv <- grm_cv(Y = ctm_pm25$pm25,
-                     X = ctm_pm25$pm25,
+                     X = ctm_pm25$ctm,
                      cv.object = cv_id_ctm_ord,
                      L = ctm_pm25[, c("elevation", "forestcover",
                                       "hwy_length", "lim_hwy_length", 
@@ -87,8 +131,34 @@ ctm_fit_cv <- grm_cv(Y = ctm_pm25$pm25,
                      spacetime.id = ctm_pm25$spacetime_id)
 
 
+ctm_fit_cv_nngp <- grm_cv(Y = ctm_pm25$pm25,
+                          X = ctm_pm25$ctm,
+                          cv.object = cv_id_ctm_ord,
+                          L = ctm_pm25[, c("elevation", "forestcover",
+                                           "hwy_length", "lim_hwy_length", 
+                                           "local_rd_length", "point_emi_any")],
+                          M = ctm_pm25[, c("tmp", "wind")],
+                          n.iter = 500,
+                          burn = 100,
+                          thin = 4,
+                          nngp = T,
+                          coords = ctm_pm25[, c("x", "y")],
+                          space.id = ctm_pm25$space_id,
+                          time.id = ctm_pm25$time_id,
+                          spacetime.id = ctm_pm25$spacetime_id)
+
+ctm_fit_cv
+ctm_fit_cv$estimate[1000:1010]
+ctm_pm25$pm25[1000:1010]
+ctm_fit_cv$sd[1000:1010]
+ctm_fit_cv$upper_95[1000:1010]
+
+mean((ctm_fit_cv$estimate - ctm_pm25$pm25) ^ 2, na.rm = T)
+mean((ctm_fit_cv_nngp$estimate - ctm_pm25$pm25) ^ 2, na.rm = T)
+
+
 ctm_fit_cv_spat <- grm_cv(Y = ctm_pm25$pm25,
-                          X = ctm_pm25$pm25,
+                          X = ctm_pm25$ctm,
                           cv.object = cv_id_ctm_spcl,
                           L = ctm_pm25[, c("elevation", "forestcover",
                                            "hwy_length", "lim_hwy_length", 

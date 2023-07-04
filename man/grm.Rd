@@ -19,6 +19,9 @@ grm(
   include.multiplicative.annual.resid = T,
   nngp = F,
   num_neighbors = 10,
+  discrete.theta.alpha.values = NULL,
+  discrete.theta.beta.values = NULL,
+  discrete.theta.gibbs = T,
   n.iter = 25000,
   burn = 5000,
   thin = 4,
@@ -64,6 +67,12 @@ grm(
 \item{nngp}{Use nearest neighbor Gaussian process (NNGP) in place of Gaussian process}
 
 \item{num_neighbors}{Number of nearest neighbors to use in NNGP}
+
+\item{discrete.theta.alpha.values}{Values of theta (GP intercept range parameter) to use in discrete uniform prior. If NULL (default) continuous theta prior is used}
+
+\item{discrete.theta.beta.values}{Values of theta (GP slope range parameter) to use in discrete uniform prior. If NULL (default) continuous theta prior is used}
+
+\item{discrete.theta.gibbs}{If TRUE, use Gibbs sampling to sample theta.alpha and theta.beta. If FALSE, use Metropolis-Hastings (jump's to nearest discrete values)}
 
 \item{n.iter}{Number of iterations used in predictions.}
 

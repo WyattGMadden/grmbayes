@@ -57,12 +57,13 @@ grm_cv = function(Y,
         print(paste0("Performing CV Experiment ---- Fold ", cv.i))
         train.id <- cv.id != cv.i & cv.id != 0
         test.id.temp <- cv.id == cv.i
-        #remove any test observations that are within the training observations time range
+        #remove any test observations that are not within the training observations time range
         #these will be NA's in final cv predictions
         test.id.remove <- (min(time.id[train.id]) > time.id | max(time.id[train.id]) < time.id) & test.id.temp
         test.id <- test.id.temp & !test.id.remove
-        time.id.train = time.id[cv.id != cv.i & cv.id != 0]
-        time.id.test = time.id[cv.id == cv.i]
+
+        time.id.train = time.id[train.id]
+        time.id.test = time.id[test.id]
 
         Y.train = Y[train.id]
         Y.test = Y[test.id]
@@ -146,8 +147,8 @@ grm_cv = function(Y,
                               M.pred = M.test, 
                               coords.Y = coords.train,
                               coords.pred = coords.test,
-                              space.id = space.id.test.temp,
                               space.id.Y = space.id.train.temp,
+                              space.id = space.id.test.temp,
                               time.id = time.id.test,
                               spacetime.id = spacetime.id.test,
                               in.sample = in_sample)

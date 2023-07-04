@@ -19,6 +19,7 @@
 #' @param num_neighbors Number of nearest neighbors to use in NNGP
 #' @param discrete.theta.alpha.values Values of theta (GP intercept range parameter) to use in discrete uniform prior. If NULL (default) continuous theta prior is used
 #' @param discrete.theta.beta.values Values of theta (GP slope range parameter) to use in discrete uniform prior. If NULL (default) continuous theta prior is used
+#' @param discrete.theta.gibbs If TRUE, use Gibbs sampling to sample theta.alpha and theta.beta. If FALSE, use Metropolis-Hastings (jump's to nearest discrete values)
 #' @param n.iter Number of iterations used in predictions. 
 #' @param burn Number of pre-covergence simulations
 #' @param thin Save every thin'th simulation
@@ -58,6 +59,7 @@ grm = function(Y,
                num_neighbors = 10,
                discrete.theta.alpha.values = NULL,
                discrete.theta.beta.values = NULL,
+               discrete.theta.gibbs = T,
                n.iter = 25000,
                burn = 5000,
                thin = 4,
@@ -199,6 +201,11 @@ grm = function(Y,
                                    function(x) solve(x))
         kernals_det <- lapply(kernals, 
                               function(x) as.numeric(determinant(x)$modulus))
+
+        #initialize at middle of range
+        which_theta_beta_curr <- ceiling(length(discrete.theta.beta.values) / 2)
+        theta_beta = discrete.theta.beta.values[which_theta_beta_curr]
+
 
     }
 
@@ -891,8 +898,6 @@ grm = function(Y,
 
         #Update spatial coefficent for AOD if discrete theta (GP range parameter)
         if (include.multiplicative.annual.resid & !nngp & !is.null(discrete.theta.beta.values)) {
-            which_theta_beta_curr = 2
-            theta_beta_curr = discrete.theta.beta.values[which_theta_beta_curr]
 
             kern_curr = kernals[[which_theta_beta_curr]]
             kern_inv_curr = kernals_inv[[which_theta_beta_curr]]
@@ -932,56 +937,102 @@ grm = function(Y,
             }
             tau_beta = 1 / stats::rgamma(1, N.space * N.spacetime /2 + tau.a, SSS / 2 + tau.b)
       
-            #Update theta_beta
-            which_theta_beta_prop <- sample(1:length(discrete.theta.beta.values), 1)
-            which_theta_beta_prop = 3
-            theta_beta_prop = discrete.theta.beta.values[which_theta_beta_prop]
-            kern_prop = kernals[[which_theta_beta_prop]]
-            kern_inv_prop = kernals_inv[[which_theta_beta_prop]]
-            kern_chol_prop = kernals_chol[[which_theta_beta_prop]]
-            kern_chol_inv_prop = kernals_chol_inv[[which_theta_beta_prop]]
-            kern_det_prop = kernals_det[[which_theta_beta_prop]]
+            #update theta_beta
+            if (!discrete.theta.gibbs) {
+                #Update theta_beta - mh jump 
+                #jump is which direction to jump in the discrete theta value indices
+                #adjustment is the mh proposal likelihood adjustment
+                if (which_theta_beta_curr == 1) { 
+                    jump <- 1
+                    lik_jump_beta_curr_to_prop <- 1
+                    lik_jump_beta_prop_to_curr <- 0.5
+                } else if (which_theta_beta_curr == length(discrete.theta.beta.values)) {
+                    jump <- -1
+                    lik_jump_beta_curr_to_prop <- 1
+                    lik_jump_beta_prop_to_curr <- 0.5
+                } else {
+                    jump <- sample(c(-1, 1), 1)
+                    lik_jump_beta_curr_to_prop <- 0.5
+                    if ((jump + which_theta_beta_curr) %in% c(1, length(discrete.theta.beta.values))) {
+                        lik_jump_beta_prop_to_curr <- 1
+                    } else {
+                        lik_jump_beta_prop_to_curr <- 0.5
+                    }
+                }
 
-            SSS_chol_curr = sqrt(tau_beta) * kern_chol_curr
-            SSS_det_curr = ncol(kern_curr) * log(tau_beta) + kern_det_curr
-            SSS_chol_inv_curr = (1 / sqrt(tau_beta)) * kern_inv_curr
+                which_theta_beta_prop <- which_theta_beta_curr + jump
+                theta_beta_prop = discrete.theta.beta.values[which_theta_beta_prop]
+                kern_prop = kernals[[which_theta_beta_prop]]
+                kern_inv_prop = kernals_inv[[which_theta_beta_prop]]
+                kern_chol_prop = kernals_chol[[which_theta_beta_prop]]
+                kern_chol_inv_prop = kernals_chol_inv[[which_theta_beta_prop]]
+                kern_det_prop = kernals_det[[which_theta_beta_prop]]
 
-            SSS_chol_prop = sqrt(tau_beta) * kern_chol_prop
-            SSS_det_prop = ncol(kern_prop) * log(tau_beta) + kern_det_prop
-            SSS_chol_inv_prop = (1 / sqrt(tau_beta)) * kern_inv_prop
+                SSS_chol_curr = sqrt(tau_beta) * kern_chol_curr
+                SSS_det_curr = ncol(kern_curr) * log(tau_beta) + kern_det_curr
+                SSS_chol_inv_curr = (1 / sqrt(tau_beta)) * kern_inv_curr
 
-            lik.curr = 0
-            lik.prop = 0
+                SSS_chol_prop = sqrt(tau_beta) * kern_chol_prop
+                SSS_det_prop = ncol(kern_prop) * log(tau_beta) + kern_det_prop
+                SSS_chol_inv_prop = (1 / sqrt(tau_beta)) * kern_inv_prop
 
-            for (st in unique(spacetime.id)) {
-                beta_space_st = beta_space[space_to_spacetime_assign == st]
-                lik.curr_st = d_mvn_chol_uvn(beta_space_st, 
-                                             SSS_chol_inv_curr, 
-                                             SSS_det_curr)
-                lik.prop_st = d_mvn_chol_uvn(beta_space_st, 
-                                             SSS_chol_inv_prop, 
-                                             SSS_det_prop)
-                lik.curr = lik.curr + lik.curr_st
-                lik.prop = lik.prop + lik.prop_st
+                lik.curr = 0
+                lik.prop = 0
+
+                for (st in unique(spacetime.id)) {
+                    beta_space_st = beta_space[space_to_spacetime_assign == st]
+                    lik.curr_st = d_mvn_chol_uvn(beta_space_st, 
+                                                 SSS_chol_inv_curr, 
+                                                 SSS_det_curr)
+                    lik.prop_st = d_mvn_chol_uvn(beta_space_st, 
+                                                 SSS_chol_inv_prop, 
+                                                 SSS_det_prop)
+                    lik.curr = lik.curr + lik.curr_st
+                    lik.prop = lik.prop + lik.prop_st
+                }
+
+                ratio = lik.prop + 
+                    log(lik_jump_beta_prop_to_curr) -
+                    lik.curr - 
+                    log(lik_jump_beta_curr_to_prop)
+
+
+                if(log(stats::runif(1)) < ratio) {
+                    which_theta_beta_curr <- which_theta_beta_prop
+                    theta_beta = discrete.theta.beta.values[which_theta_beta_curr]
+                    theta.acc[2] = theta.acc[2] + 1
+                }
             }
 
-            ratio = lik.prop + 
-                stats::dgamma(theta.prop,  
-                              theta.a, 
-                              theta.b, 
-                              log = T) + 
-                log(theta.prop) -
-                lik.curr - 
-                stats::dgamma(theta_beta, 
-                              theta.a, 
-                              theta.b, 
-                              log = T) - 
-                log(theta_beta)
+            #Update theta_beta - gibbs
+            if (discrete.theta.gibbs) {
+                #jump is which direction to jump in the discrete theta value indices
+                #adjustment is the mh proposal likelihood adjustment
 
-            if(log(stats::runif(1)) < ratio) {
-                theta_beta = theta.prop
-                theta.acc[2] = theta.acc[2] + 1
+
+                SSS_chol = lapply(kernals_chol, 
+                                       function(x) sqrt(tau_beta) * x)
+                SSS_det = lapply(kernals_det,
+                                 function(x) N.space * log(tau_beta) + x)
+                SSS_chol_inv = lapply(kernals_inv,
+                                      function(x) (1 / sqrt(tau_beta)) * x)
+
+
+                lik = rep(0, length(discrete.theta.beta.values))
+
+
+
+                for (st in unique(spacetime.id)) {
+                    beta_space_st = beta_space[space_to_spacetime_assign == st]
+                    lik <- lik + mapply(function(x, y) d_mvn_chol_uvn(beta_space_st, x, y),
+                                        SSS_chol_inv,
+                                        SSS_det)
+                }
+                theta_beta <- sample(x = discrete.theta.beta.values, 
+                                     size = 1, 
+                                     prob = exp(lik - max(lik)))
             }
+
         }
       
         #Update temporal intercepts and its parameters
