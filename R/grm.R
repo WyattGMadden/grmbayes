@@ -503,14 +503,14 @@ grm = function(Y,
         sigma2 = 1 / stats::rgamma(1, length(RRR) / 2 + sigma.a, sum(RRR ^ 2) / 2 + sigma.b)
        
         #Update spatial intercepts and parameters if GP
-        if (include.additive.annual.resid & !nngp & !is.null(discrete.theta.alpha.values)) {
+        if (include.additive.annual.resid & !nngp & is.null(discrete.theta.alpha.values)) {
             MMM = MMM - alpha_space[Z_ID]
             RRR = Y - MMM
             XXX = 1 / sigma2 * t(Gamma_space) %*% RRR
             kern = exp(-dist.space.mat / theta_alpha)
             kern_inv = solve(kern)
             SSS = tau_alpha * kern
-            SSS_inv = solve(SSS)
+            SSS_inv = (1 / tau_alpha) * kern_inv
             for (st in unique(spacetime.id)) {
                 GtG_space_st = GtG_space[space_to_spacetime_assign == st]
                 XXX_st = XXX[space_to_spacetime_assign == st]
@@ -576,7 +576,7 @@ grm = function(Y,
         }
 
         #Update spatial intercepts and parameters if NNGP
-        if (include.additive.annual.resid & nngp) {
+        if (include.additive.annual.resid & nngp & is.null(discrete.theta.alpha.values)) {
             MMM = MMM - alpha_space[Z_ID]
             RRR = Y - MMM
             XXX = 1 / sigma2 * t(Gamma_space) %*% RRR
