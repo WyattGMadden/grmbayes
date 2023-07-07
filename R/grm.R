@@ -821,7 +821,7 @@ grm = function(Y,
                 if(log(stats::runif(1)) < ratio) {
                     which_theta_alpha_curr <- which_theta_alpha_prop
                     theta_alpha = discrete.theta.alpha.values[which_theta_alpha_curr]
-                    theta.acc[2] = theta.acc[2] + 1
+                    theta.acc[1] = theta.acc[1] + 1
                 }
             }
 
