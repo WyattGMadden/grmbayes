@@ -23,14 +23,24 @@
 #' @param n.iter Number of iterations used in predictions. 
 #' @param burn Number of pre-covergence simulations
 #' @param thin Save every thin'th simulation
-#' @param tau.tune Tau Metropolis-Hastings proposal tuning parameter, only used if nngp = T
-#' @param tau.a First tau prior hyperparameter
-#' @param tau.b Second tau prior hyperparameter
+#' @param tau.alpha.tune Tau alpha Metropolis-Hastings proposal tuning parameter, only used if nngp = T
+#' @param tau.alpha.a First tau alpha prior hyperparameter
+#' @param tau.alpha.b Second tau alpha prior hyperparameter
+#' @param tau.beta.tune Tau beta Metropolis-Hastings proposal tuning parameter, only used if nngp = T
+#' @param tau.beta.a First tau beta prior hyperparameter
+#' @param tau.beta.b Second tau beta prior hyperparameter
 #' @param omega.a First omega prior hyperparameter
 #' @param omega.b Second omega prior hyperparameter
-#' @param theta.tune Theta Metropolis-Hastings proposal tuning parameter
-#' @param theta.a First theta prior hyperparameter
-#' @param theta.b Second theta prior hyperparameter
+#' @param theta.alpha.tune Theta alpha Metropolis-Hastings proposal tuning parameter
+#' @param theta.alpha.a First theta alpha prior hyperparameter
+#' @param theta.alpha.b Second theta alpha prior hyperparameter
+#' @param theta.alpha.init Initial value for theta alpha
+#' @param theta.beta.tune Theta beta Metropolis-Hastings proposal tuning parameter
+#' @param theta.beta.a First theta beta prior hyperparameter
+#' @param theta.beta.b Second theta beta prior hyperparameter
+#' @param theta.beta.init Initial value for theta beta
+#' @param rho.alpha.init Initial value for rho alpha
+#' @param rho.beta.init Initial value for rho beta
 #' @param sigma.a First sigma prior hyperparameter
 #' @param sigma.b Second sigma prior hyperparameter
 #' @param verbose Print MCMC output
@@ -63,14 +73,24 @@ grm = function(Y,
                n.iter = 25000,
                burn = 5000,
                thin = 4,
-               tau.tune = 0.2, 
-               tau.a = 0.5,
-               tau.b = 0.005,
+               tau.alpha.tune = 0.2, 
+               tau.alpha.a = 0.5,
+               tau.alpha.b = 0.005,
+               tau.beta.tune = 0.2, 
+               tau.beta.a = 0.5,
+               tau.beta.b = 0.005,
                omega.a = 0.5,
                omega.b = 0.005,
-               theta.tune = 0.2, 
-               theta.a = 5, 
-               theta.b = 0.05,
+               theta.alpha.tune = 0.2, 
+               theta.alpha.a = 5, 
+               theta.alpha.b = 0.05,
+               theta.alpha.init = 100,
+               theta.beta.tune = 0.2, 
+               theta.beta.a = 5, 
+               theta.beta.b = 0.05,
+               theta.beta.init = 100,
+               rho.alpha.init = 0.9999,
+               rho.beta.init = 0.9999,
                sigma.a = 0.001, 
                sigma.b = 0.001,
                verbose = TRUE,
@@ -198,7 +218,7 @@ grm = function(Y,
         kernals_inv_alpha <- lapply(kernals_alpha, solve)
         kernals_chol_alpha <- lapply(kernals_alpha, 
                                function(x) t(chol(x)))
-        kernals_chol_alpha_inv_alpha <- lapply(kernals_chol_alpha, 
+        kernals_chol_inv_alpha <- lapply(kernals_chol_alpha, 
                                    function(x) solve(x))
         kernals_det_alpha <- lapply(kernals_alpha, 
                               function(x) as.numeric(determinant(x)$modulus))
@@ -216,7 +236,7 @@ grm = function(Y,
         kernals_inv_beta <- lapply(kernals_beta, solve)
         kernals_chol_beta <- lapply(kernals_beta, 
                                function(x) t(chol(x)))
-        kernals_chol_beta_inv_beta <- lapply(kernals_chol_beta, 
+        kernals_chol_inv_beta <- lapply(kernals_chol_beta, 
                                    function(x) solve(x))
         kernals_det_beta <- lapply(kernals_beta, 
                               function(x) as.numeric(determinant(x)$modulus))
@@ -397,10 +417,10 @@ grm = function(Y,
     ###Initializae sigma2
     sigma2 = stats::var(as.numeric(Y - MMM), na.rm = T)
     
-    theta_alpha = 100
-    theta_beta = 100
-    rho_alpha = 0.99999
-    rho_beta = 0.99999
+    theta_alpha = theta.alpha.init
+    theta_beta = theta.beta.init
+    rho_alpha = rho.alpha.init
+    rho_beta = rho.beta.init
     
     #############################
     ### MCMC saved parameters ###
@@ -530,13 +550,13 @@ grm = function(Y,
                 SSS = SSS + SSS_st
             }
             tau_alpha = 1 / stats::rgamma(1, 
-                                          N.space * N.spacetime / 2 + tau.a, 
-                                          SSS / 2 + tau.b)
+                                          N.space * N.spacetime / 2 + tau.alpha.a, 
+                                          SSS / 2 + tau.alpha.b)
       
             #Update theta_alpha
             theta.prop = stats::rlnorm(1, 
                                        log(theta_alpha), 
-                                       theta.tune)
+                                       theta.alpha.tune)
             SSS.curr = tau_alpha * kern
             SSS.prop = tau_alpha * exp(-dist.space.mat / theta.prop)
       
@@ -559,14 +579,14 @@ grm = function(Y,
       
             ratio = lik.prop + 
                 stats::dgamma(theta.prop, 
-                              theta.a, 
-                              theta.b, 
+                              theta.alpha.a, 
+                              theta.alpha.b, 
                               log = T) + 
                     log(theta.prop) -
                     lik.curr - 
                     stats::dgamma(theta_alpha, 
-                                  theta.a, 
-                                  theta.b, 
+                                  theta.alpha.a, 
+                                  theta.alpha.b, 
                                   log = T) - 
                     log(theta_alpha)
             if (log(stats::runif(1)) < ratio) {
@@ -629,7 +649,7 @@ grm = function(Y,
             #Update tau_alpha
             tau_prop = stats::rlnorm(1, 
                                      log(tau_alpha), 
-                                     tau.tune)
+                                     tau.alpha.tune)
             lik_prop <- 0
             lik_cur <- 0
             for (st in unique(spacetime.id)) {
@@ -657,14 +677,14 @@ grm = function(Y,
       
             ratio = lik_prop + 
                 stats::dgamma(tau_prop, 
-                              tau.a, 
-                              tau.b, 
+                              tau.alpha.a, 
+                              tau.alpha.b, 
                               log = T) + 
                 log(tau_prop) -
                 lik_cur - 
                 stats::dgamma(tau_alpha, 
-                              tau.a, 
-                              tau.b, 
+                              tau.alpha.a, 
+                              tau.alpha.b, 
                               log = T) - 
                 log(tau_alpha)
 
@@ -676,7 +696,7 @@ grm = function(Y,
             #Update theta_alpha
             theta_prop = stats::rlnorm(1, 
                                        log(theta_alpha), 
-                                       theta.tune)
+                                       theta.alpha.tune)
             lik_prop <- 0
             lik_cur <- 0
             for (st in unique(spacetime.id)) {
@@ -702,14 +722,14 @@ grm = function(Y,
 
             ratio = lik_prop + 
                 stats::dgamma(theta_prop, 
-                              theta.a, 
-                              theta.b, 
+                              theta.alpha.a, 
+                              theta.alpha.b, 
                               log = T) + 
                 log(theta_prop) -
                 lik_cur - 
                 stats::dgamma(theta_alpha, 
-                              theta.a, 
-                              theta.b, 
+                              theta.alpha.a, 
+                              theta.alpha.b, 
                               log = T) - 
                 log(theta_alpha)
 
@@ -725,7 +745,7 @@ grm = function(Y,
             kern_curr = kernals_alpha[[which_theta_alpha_curr]]
             kern_inv_curr = kernals_inv_alpha[[which_theta_alpha_curr]]
             kern_chol_curr = kernals_chol_alpha[[which_theta_alpha_curr]]
-            kern_chol_inv_curr = kernals_chol_alpha_inv_alpha[[which_theta_alpha_curr]]
+            kern_chol_inv_curr = kernals_chol_inv_alpha[[which_theta_alpha_curr]]
             kern_det_curr = kernals_det_alpha[[which_theta_alpha_curr]]
 
 
@@ -754,7 +774,7 @@ grm = function(Y,
                 SSS_st = t(alpha_space_st) %*% kern_inv_curr %*% alpha_space_st
                 SSS = SSS + SSS_st
             }
-            tau_alpha = 1 / stats::rgamma(1, N.space * N.spacetime /2 + tau.a, SSS / 2 + tau.b)
+            tau_alpha = 1 / stats::rgamma(1, N.space * N.spacetime /2 + tau.alpha.a, SSS / 2 + tau.alpha.b)
       
             #update theta_alpha
 
@@ -786,16 +806,16 @@ grm = function(Y,
                 kern_prop = kernals_alpha[[which_theta_alpha_prop]]
                 kern_inv_prop = kernals_inv_alpha[[which_theta_alpha_prop]]
                 kern_chol_prop = kernals_chol_alpha[[which_theta_alpha_prop]]
-                kern_chol_inv_prop = kernals_chol_alpha_inv_alpha[[which_theta_alpha_prop]]
+                kern_chol_inv_prop = kernals_chol_inv_alpha[[which_theta_alpha_prop]]
                 kern_det_prop = kernals_det_alpha[[which_theta_alpha_prop]]
 
                 SSS_chol_curr = sqrt(tau_alpha) * kern_chol_curr
                 SSS_det_curr = ncol(kern_curr) * log(tau_alpha) + kern_det_curr
-                SSS_chol_inv_curr = (1 / sqrt(tau_alpha)) * kern_inv_curr
+                SSS_chol_inv_curr = (1 / sqrt(tau_alpha)) * kern_chol_inv_curr
 
                 SSS_chol_prop = sqrt(tau_alpha) * kern_chol_prop
                 SSS_det_prop = ncol(kern_prop) * log(tau_alpha) + kern_det_prop
-                SSS_chol_inv_prop = (1 / sqrt(tau_alpha)) * kern_inv_prop
+                SSS_chol_inv_prop = (1 / sqrt(tau_alpha)) * kern_chol_inv_prop
 
                 lik.curr = 0
                 lik.prop = 0
@@ -812,9 +832,18 @@ grm = function(Y,
                     lik.prop = lik.prop + lik.prop_st
                 }
 
+
                 ratio = lik.prop + 
+                    stats::dgamma(theta_alpha_prop, 
+                                  theta.alpha.a, 
+                                  theta.alpha.b, 
+                                  log = T) + 
                     log(lik_jump_alpha_prop_to_curr) -
                     lik.curr - 
+                    stats::dgamma(theta_alpha, 
+                                  theta.alpha.a, 
+                                  theta.alpha.b, 
+                                  log = T) -
                     log(lik_jump_alpha_curr_to_prop)
 
 
@@ -835,7 +864,7 @@ grm = function(Y,
                                        function(x) sqrt(tau_alpha) * x)
                 SSS_det = lapply(kernals_det_alpha,
                                  function(x) N.space * log(tau_alpha) + x)
-                SSS_chol_inv = lapply(kernals_inv_alpha,
+                SSS_chol_inv = lapply(kernals_chol_inv_alpha,
                                       function(x) (1 / sqrt(tau_alpha)) * x)
 
 
@@ -847,7 +876,11 @@ grm = function(Y,
                     alpha_space_st = alpha_space[space_to_spacetime_assign == st]
                     lik <- lik + mapply(function(x, y) d_mvn_chol_uvn(alpha_space_st, x, y),
                                         SSS_chol_inv,
-                                        SSS_det)
+                                        SSS_det) + 
+                        stats::dgamma(discrete.theta.alpha.values, 
+                                      theta.alpha.a, 
+                                      theta.alpha.b, 
+                                      log = T)
                 }
                 theta_alpha <- sample(x = discrete.theta.alpha.values, 
                                      size = 1, 
@@ -888,10 +921,10 @@ grm = function(Y,
                     beta_space_st
                 SSS = SSS + SSS_st
             }
-            tau_beta = 1 / stats::rgamma(1, N.space * N.spacetime /2 + tau.a, SSS / 2 + tau.b)
+            tau_beta = 1 / stats::rgamma(1, N.space * N.spacetime /2 + tau.beta.a, SSS / 2 + tau.beta.b)
       
             #Update theta_beta
-            theta.prop = stats::rlnorm(1, log(theta_beta), theta.tune)
+            theta.prop = stats::rlnorm(1, log(theta_beta), theta.beta.tune)
             SSS.curr = tau_beta * kern
             SSS.prop = tau_beta * exp(-dist.space.mat / theta.prop)
 
@@ -913,14 +946,14 @@ grm = function(Y,
       
             ratio = lik.prop + 
                 stats::dgamma(theta.prop,  
-                              theta.a, 
-                              theta.b, 
+                              theta.beta.a, 
+                              theta.beta.b, 
                               log = T) + 
                 log(theta.prop) -
                 lik.curr - 
                 stats::dgamma(theta_beta, 
-                              theta.a, 
-                              theta.b, 
+                              theta.beta.a, 
+                              theta.beta.b, 
                               log = T) - 
                 log(theta_beta)
 
@@ -981,7 +1014,7 @@ grm = function(Y,
             #Update tau_beta
             tau_prop = stats::rlnorm(1, 
                                      log(tau_beta),
-                                     tau.tune)
+                                     tau.beta.tune)
             lik_prop <- 0
             lik_cur <- 0
             for (st in unique(spacetime.id)) {
@@ -1008,14 +1041,14 @@ grm = function(Y,
 
             ratio = lik_prop + 
                 stats::dgamma(tau_prop, 
-                              tau.a, 
-                              tau.b, 
+                              tau.beta.a, 
+                              tau.beta.b, 
                               log = T) + 
                 log(tau_prop) -
                 lik_cur - 
                 stats::dgamma(tau_beta, 
-                              tau.a, 
-                              tau.b, 
+                              tau.beta.a, 
+                              tau.beta.b, 
                               log = T) - 
                 log(tau_beta)
 
@@ -1027,7 +1060,7 @@ grm = function(Y,
             #Update theta_beta
             theta_prop = stats::rlnorm(1, 
                                        log(theta_beta), 
-                                       theta.tune)
+                                       theta.beta.tune)
             lik_prop <- 0
             lik_cur <- 0
             for (st in unique(spacetime.id)) {
@@ -1055,14 +1088,14 @@ grm = function(Y,
         
             ratio = lik_prop + 
                 stats::dgamma(theta_prop, 
-                              theta.a, 
-                              theta.b, 
+                              theta.beta.a, 
+                              theta.beta.b, 
                               log = T) + 
                 log(theta_prop) - 
                 lik_cur - 
                 stats::dgamma(theta_beta, 
-                              theta.a, 
-                              theta.b, 
+                              theta.beta.a, 
+                              theta.beta.b, 
                               log = T) - 
                 log(theta_beta)
 
@@ -1078,7 +1111,7 @@ grm = function(Y,
             kern_curr = kernals_beta[[which_theta_beta_curr]]
             kern_inv_curr = kernals_inv_beta[[which_theta_beta_curr]]
             kern_chol_curr = kernals_chol_beta[[which_theta_beta_curr]]
-            kern_chol_inv_curr = kernals_chol_beta_inv_beta[[which_theta_beta_curr]]
+            kern_chol_inv_curr = kernals_chol_inv_beta[[which_theta_beta_curr]]
             kern_det_curr = kernals_det_beta[[which_theta_beta_curr]]
 
 
@@ -1109,7 +1142,7 @@ grm = function(Y,
                     beta_space_st
                 SSS = SSS + SSS_st
             }
-            tau_beta = 1 / stats::rgamma(1, N.space * N.spacetime /2 + tau.a, SSS / 2 + tau.b)
+            tau_beta = 1 / stats::rgamma(1, N.space * N.spacetime /2 + tau.beta.a, SSS / 2 + tau.beta.b)
       
             #update theta_beta
 
@@ -1141,16 +1174,16 @@ grm = function(Y,
                 kern_prop = kernals_beta[[which_theta_beta_prop]]
                 kern_inv_prop = kernals_inv_beta[[which_theta_beta_prop]]
                 kern_chol_prop = kernals_chol_beta[[which_theta_beta_prop]]
-                kern_chol_inv_prop = kernals_chol_beta_inv_beta[[which_theta_beta_prop]]
+                kern_chol_inv_prop = kernals_chol_inv_beta[[which_theta_beta_prop]]
                 kern_det_prop = kernals_det_beta[[which_theta_beta_prop]]
 
                 SSS_chol_curr = sqrt(tau_beta) * kern_chol_curr
                 SSS_det_curr = ncol(kern_curr) * log(tau_beta) + kern_det_curr
-                SSS_chol_inv_curr = (1 / sqrt(tau_beta)) * kern_inv_curr
+                SSS_chol_inv_curr = (1 / sqrt(tau_beta)) * kern_chol_inv_curr
 
                 SSS_chol_prop = sqrt(tau_beta) * kern_chol_prop
                 SSS_det_prop = ncol(kern_prop) * log(tau_beta) + kern_det_prop
-                SSS_chol_inv_prop = (1 / sqrt(tau_beta)) * kern_inv_prop
+                SSS_chol_inv_prop = (1 / sqrt(tau_beta)) * kern_chol_inv_prop
 
                 lik.curr = 0
                 lik.prop = 0
@@ -1168,8 +1201,16 @@ grm = function(Y,
                 }
 
                 ratio = lik.prop + 
+                    stats::dgamma(theta_beta_prop, 
+                                  theta.beta.a, 
+                                  theta.beta.b, 
+                                  log = T) + 
                     log(lik_jump_beta_prop_to_curr) -
                     lik.curr - 
+                    stats::dgamma(theta_beta, 
+                                  theta.beta.a, 
+                                  theta.beta.b, 
+                                  log = T) -
                     log(lik_jump_beta_curr_to_prop)
 
 
@@ -1190,7 +1231,7 @@ grm = function(Y,
                                        function(x) sqrt(tau_beta) * x)
                 SSS_det = lapply(kernals_det_beta,
                                  function(x) N.space * log(tau_beta) + x)
-                SSS_chol_inv = lapply(kernals_inv_beta,
+                SSS_chol_inv = lapply(kernals_chol_inv_beta,
                                       function(x) (1 / sqrt(tau_beta)) * x)
 
 
@@ -1203,6 +1244,10 @@ grm = function(Y,
                     lik <- lik + mapply(function(x, y) d_mvn_chol_uvn(beta_space_st, x, y),
                                         SSS_chol_inv,
                                         SSS_det)
+                        stats::dgamma(discrete.theta.beta.values, 
+                                      theta.beta.a, 
+                                      theta.beta.b, 
+                                      log = T)
                 }
                 theta_beta <- sample(x = discrete.theta.beta.values, 
                                      size = 1, 

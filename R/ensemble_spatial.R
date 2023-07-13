@@ -10,6 +10,11 @@
 #' @param date.Y.2 Date (or other unique day id) for second primary variable
 #' @param coords.Y.1 Matrix of x y coordinates for first primary variable, with colnames(coords) == c("x", "y"), (n, 2)
 #' @param space.id.Y.1 Spatial location ID vector for first primary variable (n)
+#' @param tau.a First tau prior hyperparameter
+#' @param tau.b Second tau prior hyperparameter
+#' @param theta.tune Theta Metropolis-Hastings proposal tuning parameter
+#' @param theta.a First theta prior hyperparameter
+#' @param theta.b Second theta prior hyperparameter
 #'
 #' @return A data frame containing cross validation predictions
 #'

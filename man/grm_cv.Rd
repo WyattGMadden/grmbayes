@@ -26,13 +26,24 @@ grm_cv(
   n.iter = 25000,
   burn = 5000,
   thin = 4,
-  tau.a = 0.5,
-  tau.b = 0.005,
+  tau.alpha.tune = 0.2,
+  tau.alpha.a = 0.5,
+  tau.alpha.b = 0.005,
+  tau.beta.tune = 0.2,
+  tau.beta.a = 0.5,
+  tau.beta.b = 0.005,
   omega.a = 0.5,
   omega.b = 0.005,
-  theta.tune = 0.2,
-  theta.a = 5,
-  theta.b = 0.05,
+  theta.alpha.tune = 0.2,
+  theta.alpha.a = 5,
+  theta.alpha.b = 0.05,
+  theta.alpha.init = 100,
+  theta.beta.tune = 0.2,
+  theta.beta.a = 5,
+  theta.beta.b = 0.05,
+  theta.beta.init = 100,
+  rho.alpha.init = 0.9999,
+  rho.beta.init = 0.9999,
   sigma.a = 0.001,
   sigma.b = 0.001,
   verbose = TRUE,
@@ -82,19 +93,41 @@ grm_cv(
 
 \item{thin}{Save every thin'th simulation}
 
-\item{tau.a}{First tau prior hyperparameter}
+\item{tau.alpha.tune}{Tau alpha Metropolis-Hastings proposal tuning parameter, only used if nngp = T}
 
-\item{tau.b}{Second tau prior hyperparameter}
+\item{tau.alpha.a}{First tau alpha prior hyperparameter}
+
+\item{tau.alpha.b}{Second tau alpha prior hyperparameter}
+
+\item{tau.beta.tune}{Tau beta Metropolis-Hastings proposal tuning parameter, only used if nngp = T}
+
+\item{tau.beta.a}{First tau beta prior hyperparameter}
+
+\item{tau.beta.b}{Second tau beta prior hyperparameter}
 
 \item{omega.a}{First omega prior hyperparameter}
 
 \item{omega.b}{Second omega prior hyperparameter}
 
-\item{theta.tune}{Theta Metropolis-Hastings proposal tuning parameter}
+\item{theta.alpha.tune}{Theta alpha Metropolis-Hastings proposal tuning parameter}
 
-\item{theta.a}{First theta prior hyperparameter}
+\item{theta.alpha.a}{First theta alpha prior hyperparameter}
 
-\item{theta.b}{Second theta prior hyperparameter}
+\item{theta.alpha.b}{Second theta alpha prior hyperparameter}
+
+\item{theta.alpha.init}{Initial value for theta alpha}
+
+\item{theta.beta.tune}{Theta beta Metropolis-Hastings proposal tuning parameter}
+
+\item{theta.beta.a}{First theta beta prior hyperparameter}
+
+\item{theta.beta.b}{Second theta beta prior hyperparameter}
+
+\item{theta.beta.init}{Initial value for theta beta}
+
+\item{rho.alpha.init}{Initial value for rho alpha}
+
+\item{rho.beta.init}{Initial value for rho beta}
 
 \item{sigma.a}{First sigma prior hyperparameter}
 
