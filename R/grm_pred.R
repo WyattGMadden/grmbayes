@@ -51,6 +51,8 @@ grm_pred = function(grm.fit,
         N.Lmax = ncol(L.pred) #Number of spatial predictors to use
         N.Mmax = ncol(M.pred) #Number of spatial-temporal predictors to use
 
+        cov_kern = grm.fit$cov_kern
+
         ############################
         ###standardize X, L and M###
         ############################
@@ -137,8 +139,10 @@ grm_pred = function(grm.fit,
                   tau.m = grm.fit$others$tau.alpha[m]
                   theta.m = grm.fit$others$theta.alpha[m]
                   Sigma11.m = tau.m
-                  Sigma12.m = tau.m * exp(-1 / theta.m * D12)
-                  Sigma22.m = tau.m * exp(-1 / theta.m * D22)
+                  Sigma12.m = tau.m * cov_kern(distance = D12, 
+                                               theta = theta.m)
+                  Sigma22.m = tau.m * cov_kern(distance = D22, 
+                                               theta = theta.m)
                   InvSigma22.m = solve(Sigma22.m)
             
                   for (j in 1:N.spacetime) {
@@ -168,8 +172,10 @@ grm_pred = function(grm.fit,
                     tau.m = grm.fit$others$tau.beta[m]
                     theta.m = grm.fit$others$theta.beta[m] 
                     Sigma11.m = tau.m
-                    Sigma12.m = tau.m * exp(-1 / theta.m * D12)
-                    Sigma22.m = tau.m * exp(-1 / theta.m * D22)
+                    Sigma12.m = tau.m * cov_kern(distance = D12, 
+                                                 theta = theta.m)
+                    Sigma22.m = tau.m * cov_kern(distance = D22, 
+                                                 theta = theta.m)
                     InvSigma22.m = solve(Sigma22.m)
               
                     for (j in 1:N.spacetime) {
@@ -254,7 +260,8 @@ grm_pred = function(grm.fit,
                         alpha.m.j.pred <- rep(0, length(alpha.j.space.id.pred))
 
                         for (i in 1:length(alpha.j.space.id.pred)) {
-                            sigma.m.j.i <- exp_cov(dist_mats_pred[[i]], phi = tau.m, r = theta.m)
+                            sigma.m.j.i <- tau.m * cov_kern(distance = dist_mats_pred[[i]], 
+                                                            theta = theta.m)
                             inv.sigma.m.j.i <- solve(sigma.m.j.i[-1, -1])
                             alpha.mu.m.j.i <- sigma.m.j.i[1, -1] %*% 
                                 inv.sigma.m.j.i %*% 
@@ -305,7 +312,8 @@ grm_pred = function(grm.fit,
                         beta.m.j.pred <- rep(0, length(beta.j.space.id.pred))
 
                         for (i in 1:length(beta.j.space.id.pred)) {
-                            sigma.m.j.i <- exp_cov(dist_mats_pred[[i]], phi = tau.m, r = theta.m)
+                            sigma.m.j.i <- tau.m * cov_kern(distance = dist_mats_pred[[i]], 
+                                                            theta = theta.m)
                             inv.sigma.m.j.i <- solve(sigma.m.j.i[-1, -1])
                             beta.mu.m.j.i <- sigma.m.j.i[1, -1] %*% 
                                 inv.sigma.m.j.i %*% 

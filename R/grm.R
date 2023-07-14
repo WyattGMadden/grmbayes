@@ -23,6 +23,8 @@
 #' @param n.iter Number of iterations used in predictions. 
 #' @param burn Number of pre-covergence simulations
 #' @param thin Save every thin'th simulation
+#' @param covariance Specify covariance function (from "exponential" and "matern")
+#' @param matern.nu Specify nu parameter for Matern covariance function if used (from 0.5, 1.5, and 2.5)
 #' @param tau.alpha.tune Tau alpha Metropolis-Hastings proposal tuning parameter, only used if nngp = T
 #' @param tau.alpha.a First tau alpha prior hyperparameter
 #' @param tau.alpha.b Second tau alpha prior hyperparameter
@@ -73,6 +75,8 @@ grm = function(Y,
                n.iter = 25000,
                burn = 5000,
                thin = 4,
+               covariance = "exponential",
+               matern.nu = 1.5,
                tau.alpha.tune = 0.2, 
                tau.alpha.a = 0.5,
                tau.alpha.b = 0.005,
@@ -129,6 +133,28 @@ grm = function(Y,
       print(paste0("     Total number of spatial-temporal covariates: ", 
                    ncol(M))
       )
+    }
+
+    #################################
+    ### Specify Covariance Kernal ###
+    #################################
+
+    if (covariance == "exponential") {
+
+      cov_kern <- exponential_kernal
+
+    } else if (covariance == "matern") {
+
+      cov_kern <- function(distance, theta) {
+          matern_kernal(distance = distance, 
+                        theta = theta, 
+                        nu = matern.nu)
+      }
+      
+    } else {
+
+      stop("Covariance function not recognized")
+
     }
 
     ##############################
@@ -214,7 +240,8 @@ grm = function(Y,
     if (!is.null(discrete.theta.alpha.values)) {
 
         kernals_alpha <- lapply(discrete.theta.alpha.values,
-                               function(x) exp(-dist.space.mat / x))
+                               function(x) cov_kern(distance = dist.space.mat, 
+                                                    theta = x))
         kernals_inv_alpha <- lapply(kernals_alpha, solve)
         kernals_chol_alpha <- lapply(kernals_alpha, 
                                function(x) t(chol(x)))
@@ -232,7 +259,8 @@ grm = function(Y,
     if (!is.null(discrete.theta.beta.values)) {
 
         kernals_beta <- lapply(discrete.theta.beta.values,
-                               function(x) exp(-dist.space.mat / x))
+                               function(x) cov_kern(distance = dist.space.mat, 
+                                                    theta = x))
         kernals_inv_beta <- lapply(kernals_beta, solve)
         kernals_chol_beta <- lapply(kernals_beta, 
                                function(x) t(chol(x)))
@@ -527,7 +555,7 @@ grm = function(Y,
             MMM = MMM - alpha_space[Z_ID]
             RRR = Y - MMM
             XXX = 1 / sigma2 * t(Gamma_space) %*% RRR
-            kern = exp(-dist.space.mat / theta_alpha)
+            kern = cov_kern(distance = dist.space.mat, theta = theta_alpha)
             kern_inv = solve(kern)
             SSS = tau_alpha * kern
             SSS_inv = (1 / tau_alpha) * kern_inv
@@ -558,7 +586,8 @@ grm = function(Y,
                                        log(theta_alpha), 
                                        theta.alpha.tune)
             SSS.curr = tau_alpha * kern
-            SSS.prop = tau_alpha * exp(-dist.space.mat / theta.prop)
+            SSS.prop = tau_alpha * cov_kern(distance = dist.space.mat, 
+                                            theta = theta.prop)
       
             lik.curr = 0
             lik.prop = 0
@@ -615,7 +644,7 @@ grm = function(Y,
 
 
                 #iterate through ordered conditionals
-                SSS_n <- tau_alpha * exp(- 0 / theta_alpha)
+                SSS_n <- tau_alpha * cov_kern(distance = 0, theta = theta_alpha)
                 VVV_n <- (1 / sigma2 * GtG_space_st_ord[length(alpha_space_st)]) + (1 / SSS_n)
                 joint_cov_n <- 1 / VVV_n
                 joint_mean_n <- joint_cov_n * XXX_st_ord[length(alpha_space_st)]
@@ -624,7 +653,8 @@ grm = function(Y,
                 for (j in (length(alpha_space_st) - 1):1) {
                     j_and_neighbors <- c(j, neighbors[[j]])
                     dist_space_mat_j <- dist_matrices[[j]]
-                    SSS_j <- tau_alpha * exp(- dist_space_mat_j / theta_alpha)
+                    SSS_j <- tau_alpha * cov_kern(distance = dist_space_mat_j, 
+                                                  theta = theta_alpha)
                     VVV_j <- diag(1 / sigma2 * GtG_space_st_ord[j_and_neighbors]) + solve(SSS_j)
                     joint_cov <- solve(VVV_j)
                     joint_mean <- joint_cov %*% XXX_st_ord[j_and_neighbors]
@@ -662,6 +692,7 @@ grm = function(Y,
                               dist_matrices = dist_matrices,
                               phi = tau_prop,
                               r = theta_alpha,
+                              cov_kern = cov_kern,
                               log = T))
                 lik_cur <- lik_cur +
                     sum(dnngp(y = alpha_space_st,
@@ -670,6 +701,7 @@ grm = function(Y,
                               dist_matrices = dist_matrices,
                               phi = tau_alpha,
                               r = theta_alpha,
+                              cov_kern = cov_kern,
                               log = T))
             }
 
@@ -709,6 +741,7 @@ grm = function(Y,
                               dist_matrices = dist_matrices,
                               phi = tau_alpha,
                               r = theta_prop,
+                              cov_kern = cov_kern,
                               log = T))
                 lik_cur <- lik_cur +
                     sum(dnngp(y = alpha_space_st,
@@ -717,6 +750,7 @@ grm = function(Y,
                               dist_matrices = dist_matrices,
                               phi = tau_alpha,
                               r = theta_alpha,
+                              cov_kern = cov_kern,
                               log = T))
             }
 
@@ -895,7 +929,8 @@ grm = function(Y,
             MMM = MMM - beta_space[Z_ID] * X
             RRR = Y - MMM
             XXX = 1 / sigma2 * t(Gamma_space) %*% (X * RRR)
-            kern = exp(-dist.space.mat / theta_beta)
+            kern = cov_kern(distance = dist.space.mat, 
+                            theta = theta_beta)
             kern_inv = solve(kern)
             SSS = tau_beta * kern
             SSS_inv = (1 / tau_beta) * kern_inv
@@ -926,7 +961,8 @@ grm = function(Y,
             #Update theta_beta
             theta.prop = stats::rlnorm(1, log(theta_beta), theta.beta.tune)
             SSS.curr = tau_beta * kern
-            SSS.prop = tau_beta * exp(-dist.space.mat / theta.prop)
+            SSS.prop = tau_beta * cov_kern(distance = dist.space.mat, 
+                                           theta = theta.prop)
 
             lik.curr = 0
             lik.prop = 0
@@ -979,7 +1015,8 @@ grm = function(Y,
                 coords_st_ord <- ordered_coords
 
                 beta_space_st <- beta_space[space_to_spacetime_assign == st]
-                SSS_n <- tau_beta * exp(- 0 / theta_beta)
+                SSS_n <- tau_beta * cov_kern(distance = 0, 
+                                             theta = theta_beta)
                 VVV_n <- (1 / sigma2 * X_S_st_ord[length(beta_space_st)]) + (1 / SSS_n)
                 # iterate through ordered conditionals
                 joint_cov_n <- 1 / VVV_n
@@ -989,7 +1026,8 @@ grm = function(Y,
                 for (j in (length(beta_space_st) - 1):1) {
                     j_and_neighbors <- c(j, neighbors[[j]])
                     dist_space_mat_j <- dist_matrices[[j]]
-                    SSS_j <- tau_beta * exp(- dist_space_mat_j / theta_beta)
+                    SSS_j <- tau_beta * cov_kern(distance = dist_space_mat_j, 
+                                                 theta = theta_beta)
                     VVV_j = diag(1 / sigma2 * X_S_st_ord[j_and_neighbors]) + solve(SSS_j)
                     joint_cov = solve(VVV_j)
                     joint_mean <- joint_cov %*% XXX_st_ord[j_and_neighbors]
@@ -1027,6 +1065,7 @@ grm = function(Y,
                               dist_matrices = dist_matrices,
                               phi = tau_prop,
                               r = theta_beta,
+                              cov_kern = cov_kern, 
                               log = T))
                 lik_cur <- lik_cur +
                     sum(dnngp(y = beta_space_st,
@@ -1035,6 +1074,7 @@ grm = function(Y,
                               dist_matrices = dist_matrices,
                               phi = tau_beta,
                               r = theta_beta,
+                              cov_kern = cov_kern,
                               log = T))
             }
 
@@ -1073,6 +1113,7 @@ grm = function(Y,
                               dist_matrices = dist_matrices,
                               phi = tau_beta,
                               r = theta_prop,
+                              cov_kern = cov_kern,
                               log = T))
                 lik_cur <- lik_cur +
                     sum(dnngp(y = beta_space_st,
@@ -1081,6 +1122,7 @@ grm = function(Y,
                               dist_matrices = dist_matrices,
                               phi = tau_beta,
                               r = theta_beta,
+                              cov_kern = cov_kern,
                               log = T))
             }
 
@@ -1420,6 +1462,7 @@ grm = function(Y,
          standardize.param = standardize.param,
          theta.acc = theta.acc,
          tau.acc = tau.acc,
-         nngp.info = nngp.info.save)
+         nngp.info = nngp.info.save,
+         cov_kern = cov_kern)
 }
 

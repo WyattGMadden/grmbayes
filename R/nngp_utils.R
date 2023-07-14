@@ -1,7 +1,4 @@
 
-exp_cov <- function(dist, phi, r) {
-    phi * exp(-dist / r)
-}
 
 euc_dist <- function(x1, y1, x2, y2) {
     sqrt((x1 - x2)^2 + (y1 - y2)^2)
@@ -77,21 +74,24 @@ get_dist_matrices_ref <- function(ordered_coords, coords_pred, neighbors) {
     }
     return(dist_matrices)
 }
-rnngp <- function(ordered_coords, neighbors, phi, r) {
+rnngp <- function(ordered_coords, neighbors, phi, r, cov_kern) {
     y <- rep(0, nrow(ordered_coords))
-    y[nrow(ordered_coords)] <- stats::rnorm(1, 0, sqrt(exp_cov(0, phi, r)))
+    y[nrow(ordered_coords)] <- stats::rnorm(1, 0, sqrt(phi * cov_kern(distance = 0, 
+                                                                      theta = r)))
     for (i in (nrow(ordered_coords) - 1):1) {
         neighbor_i <- neighbors[[i]]
         neighbor_coords <- ordered_coords[neighbor_i, , drop = FALSE]
         neighbor_y <- y[neighbor_i]
-        y_cov <- exp_cov(0, phi, r)
-        cross_cov <- exp_cov(euc_dist(neighbor_coords[, "x"], neighbor_coords[, "y"], 
-                                      ordered_coords[i, "x"], ordered_coords[i, "y"]), 
-                             phi, r)
-        neighbor_cov <- exp_cov(as.matrix(stats::dist(neighbor_coords, 
-                                                      upper = TRUE, 
-                                                      diag = TRUE)),
-                                phi, r)
+        y_cov <- phi * cov_kern(distance = 0, theta = r)
+        cross_cov <- phi * cov_kern(distance = euc_dist(neighbor_coords[, "x"], 
+                                                        neighbor_coords[, "y"], 
+                                                        ordered_coords[i, "x"], 
+                                                        ordered_coords[i, "y"]),
+                                    theta = r)
+        neighbor_cov <- phi * cov_kern(distance = as.matrix(stats::dist(neighbor_coords, 
+                                                                        upper = TRUE, 
+                                                                        diag = TRUE)),
+                                       theta = r)
         cross_neighbor_cov <- t(cross_cov) %*% solve(neighbor_cov) 
         conditional_mean <- cross_neighbor_cov %*% neighbor_y
         conditional_cov <- y_cov - cross_neighbor_cov %*% cross_cov
@@ -104,18 +104,20 @@ rnngp <- function(ordered_coords, neighbors, phi, r) {
 
 
 
-dnngp <- function(y, ordered_coords, neighbors, dist_matrices, phi, r, log = FALSE) {
+dnngp <- function(y, ordered_coords, neighbors, dist_matrices, phi, r, cov_kern, log = FALSE) {
     d <- rep(0, nrow(ordered_coords))
     d[nrow(ordered_coords)] <- stats::dnorm(y[nrow(ordered_coords)], 
                                             0, 
-                                            sqrt(exp_cov(0, phi, r)), 
+                                            sqrt(phi * cov_kern(distance = 0,
+                                                                theta = r)), 
                                             log = log)
     for (i in 1:(nrow(ordered_coords) - 1)) {
         neighbor_i <- neighbors[[i]]
         i_and_neighbors <- c(i, neighbor_i)
         dist_space_mat_i <- dist_matrices[[i]]
 
-        joint_cov <- exp_cov(dist_space_mat_i, phi, r)
+        joint_cov <- phi * cov_kern(distance = dist_space_mat_i, 
+                                    theta = r)
 
         neighbor_y <- y[neighbor_i]
         cross_neighbor_cov <- t(joint_cov[1, -1]) %*% solve(joint_cov[-1, -1])

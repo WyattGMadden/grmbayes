@@ -26,6 +26,8 @@ grm_cv(
   n.iter = 25000,
   burn = 5000,
   thin = 4,
+  covariance = "exponential",
+  matern.nu = 1.5,
   tau.alpha.tune = 0.2,
   tau.alpha.a = 0.5,
   tau.alpha.b = 0.005,
@@ -92,6 +94,10 @@ grm_cv(
 \item{burn}{Number of pre-covergence simulations}
 
 \item{thin}{Save every thin'th simulation}
+
+\item{covariance}{Specify covariance function (from "exponential" and "matern")}
+
+\item{matern.nu}{Specify nu parameter for Matern covariance function if used (from 0.5, 1.5, and 2.5)}
 
 \item{tau.alpha.tune}{Tau alpha Metropolis-Hastings proposal tuning parameter, only used if nngp = T}
 
