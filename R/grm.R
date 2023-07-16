@@ -444,9 +444,10 @@ grm = function(Y,
     
     ###Initializae sigma2
     sigma2 = stats::var(as.numeric(Y - MMM), na.rm = T)
-    
-    theta_alpha = theta.alpha.init
-    theta_beta = theta.beta.init
+    if (is.null(discrete.theta.alpha.values)) {
+        theta_alpha = theta.alpha.init
+        theta_beta = theta.beta.init
+    }
     rho_alpha = rho.alpha.init
     rho_beta = rho.beta.init
     
@@ -919,6 +920,7 @@ grm = function(Y,
                 theta_alpha <- sample(x = discrete.theta.alpha.values, 
                                      size = 1, 
                                      prob = exp(lik - max(lik)))
+                which_theta_alpha_curr <- which(discrete.theta.alpha.values == theta_alpha)
             }
 
         }
@@ -1296,6 +1298,7 @@ grm = function(Y,
                 theta_beta <- sample(x = discrete.theta.beta.values, 
                                      size = 1, 
                                      prob = exp(lik - max(lik)))
+                which_theta_beta_curr <- which(discrete.theta.beta.values == theta_beta)
             }
 
         }
