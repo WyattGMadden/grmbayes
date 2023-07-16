@@ -910,12 +910,12 @@ grm = function(Y,
                     alpha_space_st = alpha_space[space_to_spacetime_assign == st]
                     lik <- lik + mapply(function(x, y) d_mvn_chol_uvn(alpha_space_st, x, y),
                                         SSS_chol_inv,
-                                        SSS_det) + 
-                        stats::dgamma(discrete.theta.alpha.values, 
-                                      theta.alpha.a, 
-                                      theta.alpha.b, 
-                                      log = T)
+                                        SSS_det)
                 }
+                lik <- lik + stats::dgamma(discrete.theta.alpha.values, 
+                                           theta.alpha.a, 
+                                           theta.alpha.b, 
+                                           log = T)
                 theta_alpha <- sample(x = discrete.theta.alpha.values, 
                                      size = 1, 
                                      prob = exp(lik - max(lik)))
@@ -1286,11 +1286,13 @@ grm = function(Y,
                     lik <- lik + mapply(function(x, y) d_mvn_chol_uvn(beta_space_st, x, y),
                                         SSS_chol_inv,
                                         SSS_det)
-                        stats::dgamma(discrete.theta.beta.values, 
-                                      theta.beta.a, 
-                                      theta.beta.b, 
-                                      log = T)
                 }
+
+                lik <- lik + stats::dgamma(discrete.theta.beta.values, 
+                                           theta.beta.a, 
+                                           theta.beta.b, 
+                                           log = T)
+
                 theta_beta <- sample(x = discrete.theta.beta.values, 
                                      size = 1, 
                                      prob = exp(lik - max(lik)))
