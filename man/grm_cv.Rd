@@ -27,6 +27,7 @@ grm_cv(
   burn = 5000,
   thin = 4,
   covariance = "exponential",
+  covariance.kernal = NULL,
   matern.nu = 1.5,
   tau.alpha.tune = 0.2,
   tau.alpha.a = 0.5,
@@ -95,7 +96,9 @@ grm_cv(
 
 \item{thin}{Save every thin'th simulation}
 
-\item{covariance}{Specify covariance function (from "exponential" and "matern")}
+\item{covariance}{Specify covariance function (from "exponential", "matern", "custom")}
+
+\item{covariance.kernal}{Specify a custom covariance function if covariance = "custom". Must be a function with "distance" and "theta" parameters.}
 
 \item{matern.nu}{Specify nu parameter for Matern covariance function if used (from 0.5, 1.5, and 2.5)}
 

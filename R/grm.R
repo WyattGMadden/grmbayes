@@ -23,7 +23,8 @@
 #' @param n.iter Number of iterations used in predictions. 
 #' @param burn Number of pre-covergence simulations
 #' @param thin Save every thin'th simulation
-#' @param covariance Specify covariance function (from "exponential" and "matern")
+#' @param covariance Specify covariance function (from "exponential", "matern", "custom")
+#' @param covariance.kernal Specify a custom covariance function if covariance = "custom". Must be a function with "distance" and "theta" parameters.
 #' @param matern.nu Specify nu parameter for Matern covariance function if used (from 0.5, 1.5, and 2.5)
 #' @param tau.alpha.tune Tau alpha Metropolis-Hastings proposal tuning parameter, only used if nngp = T
 #' @param tau.alpha.a First tau alpha prior hyperparameter
@@ -76,6 +77,7 @@ grm = function(Y,
                burn = 5000,
                thin = 4,
                covariance = "exponential",
+               covariance.kernal = NULL,
                matern.nu = 1.5,
                tau.alpha.tune = 0.2, 
                tau.alpha.a = 0.5,
@@ -150,6 +152,9 @@ grm = function(Y,
                         theta = theta, 
                         nu = matern.nu)
       }
+    } else if (covariance == "custom") {
+
+      cov_kern <- covariance.kernal
       
     } else {
 
