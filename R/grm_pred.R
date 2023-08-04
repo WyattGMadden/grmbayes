@@ -125,6 +125,11 @@ grm_pred = function(grm.fit,
 
             alpha_space_pred[paste0("Sample", 1:n.iter)] = 0
             beta_space_pred[paste0("Sample", 1:n.iter)] = 0
+
+
+
+
+
             
             #For alpha's
             if (include.additive.annual.resid) {
@@ -141,9 +146,15 @@ grm_pred = function(grm.fit,
                   Sigma11.m = tau.m
                   Sigma12.m = tau.m * cov_kern(distance = D12, 
                                                theta = theta.m)
-                  Sigma22.m = tau.m * cov_kern(distance = D22, 
-                                               theta = theta.m)
-                  InvSigma22.m = solve(Sigma22.m)
+
+                  if (is.null(grm.fit$discrete.theta.alpha.info)) {
+                      Sigma22.m = tau.m * cov_kern(distance = D22, 
+                                                   theta = theta.m)
+                      InvSigma22.m = solve(Sigma22.m)
+                  } else {
+                      which.theta.alpha <- grm.fit$discrete.theta.alpha.info$which.theta.alpha.discrete[m]
+                      InvSigma22.m = (1 / tau.m) * grm.fit$discrete.theta.alpha.info$kernals.inv.alpha[[which.theta.alpha]]
+                  }
             
                   for (j in 1:N.spacetime) {
                       alpha.m = grm.fit$alpha.space[grm.fit$alpha.space$spacetime.id == j, 
@@ -174,9 +185,15 @@ grm_pred = function(grm.fit,
                     Sigma11.m = tau.m
                     Sigma12.m = tau.m * cov_kern(distance = D12, 
                                                  theta = theta.m)
-                    Sigma22.m = tau.m * cov_kern(distance = D22, 
-                                                 theta = theta.m)
-                    InvSigma22.m = solve(Sigma22.m)
+
+                    if (is.null(grm.fit$discrete.theta.beta.info)) {
+                        Sigma22.m = tau.m * cov_kern(distance = D22, 
+                                                     theta = theta.m)
+                        InvSigma22.m = solve(Sigma22.m)
+                    } else {
+                      which.theta.beta <- grm.fit$discrete.theta.beta.info$which.theta.beta.discrete[m]
+                      InvSigma22.m = (1 / tau.m) * grm.fit$discrete.theta.beta.info$kernals.inv.beta[[which.theta.beta]]
+                  }
               
                     for (j in 1:N.spacetime) {
                         beta.m = grm.fit$beta.space[grm.fit$beta.space$spacetime.id == j, 

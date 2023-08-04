@@ -35,6 +35,8 @@ ctm_fit <- grm(Y = ctm_pm25$pm25,
                n.iter = 100,
                burn = 20,
                thin = 4,
+               discrete.theta.alpha.values = seq(0.1, 1.5, 0.1),
+               discrete.theta.beta.values = seq(0.1, 1.5, 0.1),
                nngp = F,
                covariance = "matern",
                matern.nu = 0.5,
@@ -47,7 +49,8 @@ ctm_fit <- grm(Y = ctm_pm25$pm25,
 
 
 cv_id_ctm_ord <- create_cv(space.id = ctm_pm25$space_id,
-                           time.id = ctm_pm25$time_id, type = "ordinary")
+                           time.id = ctm_pm25$time_id, 
+                           type = "ordinary")
 
 
 
@@ -126,7 +129,7 @@ ctm_pred <- grm_pred(grm.fit = ctm_fit,
                      spacetime.id = ctm_preds$spacetime_id,
                      include.additive.annual.resid = T,
                      include.multiplicative.annual.resid = T,
-                     n.iter = 100,
+                     n.iter = 20,
                      verbose = T)
 
 

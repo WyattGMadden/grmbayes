@@ -72,7 +72,17 @@ grm_cv = function(Y,
     for (cv.i in 1:cv.object$num.folds) {
     
         print(paste0("Performing CV Experiment ---- Fold ", cv.i))
-        train.id <- cv.id != cv.i & cv.id != 0
+
+        if (cv.object$type == "spatial_buffered") {
+
+            train.id <- cv.id != cv.i & cv.id != 0 & (!cv.object$drop.matrix[, cv.i])
+
+        } else {
+
+            train.id <- cv.id != cv.i & cv.id != 0
+
+        }
+
         test.id.temp <- cv.id == cv.i
         #remove any test observations that are not within the training observations time range
         #these will be NA's in final cv predictions
@@ -163,13 +173,13 @@ grm_cv = function(Y,
 
             TRUE
 
-        } else if (cv.object$type %in% c("spatial", "spatial_clustered")) {
+        } else if (cv.object$type %in% c("spatial", "spatial_clustered", "spatial_buffered")) {
 
             FALSE
 
         } else {
 
-            stop("cv.object$type must be either 'ordinary', 'spatial', or 'spatial_clustered'")
+            stop("cv.object$type must be either 'ordinary', 'spatial', 'spatial_clustered', or 'spatial_buffered'")
 
         }
 

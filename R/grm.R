@@ -259,6 +259,7 @@ grm = function(Y,
         which_theta_alpha_curr <- ceiling(length(discrete.theta.alpha.values) / 2)
         theta_alpha = discrete.theta.alpha.values[which_theta_alpha_curr]
 
+
     }
 
     if (!is.null(discrete.theta.beta.values)) {
@@ -459,7 +460,7 @@ grm = function(Y,
     #############################
     ### MCMC saved parameters ###
     #############################
-    ###Declare lots of matrices and vectors to save results
+    ###Declare  matrices and vectors to save results
     
     ###Total number of samples in the end
     K = (n.iter - burn) / thin
@@ -493,6 +494,14 @@ grm = function(Y,
     
     tau.acc = c(0,0)
     theta.acc = c(0,0)
+
+    if (!is.null(discrete.theta.alpha.values)) {
+        which.theta.alpha.discrete <- rep(0, K)
+    }
+
+    if (!is.null(discrete.theta.beta.values)) {
+        which.theta.beta.discrete <- rep(0, K)
+    }
     
     
     ###########################
@@ -1382,7 +1391,16 @@ grm = function(Y,
             tau_alpha.save[k] = tau_alpha
             tau_beta.save[k] = tau_beta
        
+            if (!is.null(discrete.theta.alpha.values)) {
+                which.theta.alpha.discrete[k] = which_theta_alpha_curr
+            }
+
+            if (!is.null(discrete.theta.beta.values)) {
+                which.theta.beta.discrete[k] = which_theta_beta_curr
+            }
+
             Y.hat = Y.hat + MMM / K
+
         }
 
     } ## End of MCMC iterations
@@ -1450,7 +1468,6 @@ grm = function(Y,
     row.names(standardize.param) = NULL
 
     nngp.info.save <- NULL
-
     if (nngp) {
       nngp.info.save <- list(ordered.coords = ordered_coords,
                              coord.ordering = coord_ordering,
@@ -1459,6 +1476,19 @@ grm = function(Y,
                              dist.matrices = dist_matrices,
                              space.to.spacetime.assign = space_to_spacetime_assign,
                              num_neighbors = num_neighbors)
+    }
+
+    discrete.theta.alpha.info.save <- NULL
+    if (!is.null(discrete.theta.alpha.values)) {
+        discrete.theta.alpha.info.save <- list(which.theta.alpha.discrete = which.theta.alpha.discrete,
+                                               kernals.inv.alpha = kernals_inv_alpha)
+
+    }
+
+    discrete.theta.beta.info.save <- NULL
+    if (!is.null(discrete.theta.beta.values)) {
+        discrete.theta.beta.info.save <- list(which.theta.beta.discrete = which.theta.beta.discrete,
+                                               kernals.inv.beta = kernals_inv_beta)
     }
     
     list(delta = delta.save, 
@@ -1473,6 +1503,8 @@ grm = function(Y,
          theta.acc = theta.acc,
          tau.acc = tau.acc,
          nngp.info = nngp.info.save,
+         discrete.theta.alpha.info = discrete.theta.alpha.info.save,
+         discrete.theta.beta.info = discrete.theta.beta.info.save,
          cov_kern = cov_kern)
 }
 

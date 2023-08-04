@@ -4,7 +4,14 @@
 \alias{create_cv}
 \title{Create Cross Validate ID's}
 \usage{
-create_cv(space.id, time.id, num.folds = 10, type = "spatial", coords = NULL)
+create_cv(
+  space.id,
+  time.id,
+  num.folds = 10,
+  type = "spatial",
+  coords = NULL,
+  buffer.size = NULL
+)
 }
 \arguments{
 \item{space.id}{Spatial location ID vector (n)}
@@ -16,6 +23,8 @@ create_cv(space.id, time.id, num.folds = 10, type = "spatial", coords = NULL)
 \item{type}{Type of cross validation to be performed. Options are "spatial", "ordinary", or "spatial_clustered". (default = "spatial")}
 
 \item{coords}{Matrix of x y coordinates, with colnames(coords) == c("x", "y"), (n, 2)}
+
+\item{buffer.size}{Radius of buffer size, if type = "spatial_buffered" (default = 0)}
 }
 \value{
 A named list containing a vector of cross validation ID's, number of folds, and cross validation type.
