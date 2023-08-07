@@ -131,3 +131,29 @@ dnngp <- function(y, ordered_coords, neighbors, dist_matrices, phi, r, cov_kern,
     }
     return(d)
 }
+
+dnngp_discrete_theta <- function(y, ordered_coords, neighbors, dist_matrices, phi, which_theta, kerns, kerns_partial_inv, log = FALSE) {
+    d <- rep(0, nrow(ordered_coords))
+    d[nrow(ordered_coords)] <- stats::dnorm(y[nrow(ordered_coords)], 
+                                            0, 
+                                            sqrt(phi * kerns[[length(kerns)]]),
+                                            log = log)
+    for (i in 1:(nrow(ordered_coords) - 1)) {
+        neighbor_i <- neighbors[[i]]
+        i_and_neighbors <- c(i, neighbor_i)
+        dist_space_mat_i <- dist_matrices[[i]]
+
+        joint_cov <- phi * kerns[[i]]
+
+        neighbor_y <- y[neighbor_i]
+        cross_neighbor_cov <- t(joint_cov[1, -1]) %*% ((1 / phi) * kerns_partial_inv[[i]])
+
+        conditional_mean <- cross_neighbor_cov %*% neighbor_y
+        conditional_cov <- joint_cov[1, 1] - cross_neighbor_cov %*% joint_cov[1, -1]
+        d[i] <- stats::dnorm(y[i], 
+                             conditional_mean,
+                             sqrt(conditional_cov),
+                             log = log)
+    }
+    return(d)
+}

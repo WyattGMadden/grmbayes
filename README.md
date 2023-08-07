@@ -26,18 +26,17 @@ devtools::install_github("WyattGMadden/ensembleDownscaleR")
 library(ensembleDownscaleR)
 
 ?ctm_pm25
+
 ctm_fit <- grm(Y = ctm_pm25$pm25,
                X = ctm_pm25$ctm,
                L = ctm_pm25[, c("elevation", "forestcover",
                                 "hwy_length", "lim_hwy_length", 
                                 "local_rd_length", "point_emi_any")],
                M = ctm_pm25[, c("tmp", "wind")],
-               n.iter = 100,
+               n.iter = 2000,
                burn = 20,
-               thin = 4,
-               discrete.theta.alpha.values = seq(0.1, 1.5, 0.1),
-               discrete.theta.beta.values = seq(0.1, 1.5, 0.1),
-               nngp = F,
+               thin = 1,
+               nngp = T,
                covariance = "matern",
                matern.nu = 0.5,
                coords = ctm_pm25[, c("x", "y")],
@@ -45,6 +44,7 @@ ctm_fit <- grm(Y = ctm_pm25$pm25,
                time.id = ctm_pm25$time_id,
                spacetime.id = ctm_pm25$spacetime_id,
                verbose.iter = 10)
+
 
 
 
