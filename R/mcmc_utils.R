@@ -38,3 +38,66 @@ get_discrete_theta_mh_jump <- function(which_theta_curr, discrete.theta.values) 
                 lik_jump_curr_to_prop = lik_jump_curr_to_prop, 
                 lik_jump_prop_to_curr = lik_jump_prop_to_curr))
 }
+
+#precalculate lists of kernals for discrete theta nngp 
+# used for theta alpha and theta beta in grm
+get_discrete_nngp_kernals <- function(discrete.values, dist_matrices, cov_kern) {
+
+    kernals <- lapply(discrete.values, 
+                      function(x) {
+                          lapply(dist_matrices, 
+                                 function(y) {
+                                     cov_kern(distance = y, 
+                                              theta = x)
+                                 })
+                      })
+
+    kernals_inv <- lapply(kernals, 
+                          function(x) {
+                              lapply(x, 
+                                     function(y) {
+                                         solve(y)
+                                     })
+                          })
+
+    kernals_partial_inv <- lapply(kernals, 
+                                  function(x) {
+                                      lapply(x[1:(length(x) - 1)],
+                                             function(y) {
+                                                 solve(y[-1, -1, drop = FALSE])
+                                             })
+                                  })
+    return(list(kernals = kernals, 
+                kernals_inv = kernals_inv, 
+                kernals_partial_inv = kernals_partial_inv))
+}
+
+#precalculate lists of kernals for discrete theta gp 
+# used for theta alpha and theta beta in grm
+get_discrete_gp_kernals <- function(discrete.values, dist.space.mat, cov_kern) {
+
+    kernals <- lapply(discrete.values,
+                           function(x) cov_kern(distance = dist.space.mat, 
+                                                theta = x))
+    kernals_inv <- lapply(kernals, solve)
+    kernals_chol <- lapply(kernals, 
+                           function(x) t(chol(x)))
+    kernals_chol_inv <- lapply(kernals_chol, 
+                               function(x) solve(x))
+    kernals_det <- lapply(kernals, 
+                          function(x) as.numeric(determinant(x)$modulus))
+
+    return(list(kernals = kernals, 
+                kernals_inv = kernals_inv, 
+                kernals_chol = kernals_chol,
+                kernals_chol_inv = kernals_chol_inv,
+                kernals_det = kernals_det))
+}
+
+init_discrete_theta <- function(discrete.theta.values) {
+
+    which_theta_curr <- ceiling(length(discrete.theta.values) / 2)
+    theta = discrete.theta.values[which_theta_curr]
+    return(list(which_theta_curr = which_theta_curr, 
+                theta = theta))
+}

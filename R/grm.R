@@ -102,6 +102,7 @@ grm = function(Y,
                verbose = TRUE,
                verbose.iter = 1000) {
  
+
     ###############################
     ### Get summary statistics ####
     ###############################
@@ -111,9 +112,6 @@ grm = function(Y,
     N.time = max(time.id) #Maximum number of time interval (weeks) in training
     N.time.obs = length(unique(time.id)) #Number of observed time interval (weeks)
     N.spacetime = max(spacetime.id) #Time points where spatial trends vary by (year)
-    
-    Space.labels = 1:N.space 
-    Day.labels = 1:N.time
     
     N.Lmax = ncol(L) #Number of spatial predictors to use
     N.Mmax = ncol(M) #Number of spatial-temporal predictors to use
@@ -165,27 +163,25 @@ grm = function(Y,
     ##############################
     ### Standardize X, L and M ###
     ##############################
-    L = as.matrix(L)
-    M = as.matrix(M)
     
-    ### Calculate means and standard deviation
-    X.mean = mean(X)
-    if (!is.null(M)) M.mean = apply(M, 2, mean)
-    if (!is.null(L)) L.mean = apply(L, 2, mean)
-    
-    X.sd = stats::sd(X)
-    if (!is.null(M)) M.sd = apply(M, 2, stats::sd)
-    if (!is.null(L)) L.sd = apply(L, 2, stats::sd)
-    
-    ### Standardize
-    X = (X - mean(X)) / X.sd
-    if (!is.null(M) & !any(M.sd == 0)) { 
-        M = sweep(sweep(M, 2, M.mean, "-"), 2, M.sd, "/") 
+    X.mean <- mean(X)
+    X.sd <- stats::sd(X)
+    X <- (X - X.mean) / X.sd
+
+    if (!is.null(L)) {
+        L.temp <- covariate_matrix_standardize(L)
+        L <- L.temp$x
+        L.mean <- L.temp$x.mean
+        L.sd <- L.temp$x.sd
     }
 
-    if (!is.null(L) & !any(L.sd == 0)) {
-        L = sweep(sweep(L, 2, L.mean, "-"), 2, L.sd, "/") 
+    if (!is.null(M)) {
+        M.temp <- covariate_matrix_standardize(M)
+        M <- M.temp$x
+        M.mean <- M.temp$x.mean
+        M.sd <- M.temp$x.sd
     }
+
 
     ######################################
     ### Create Spatial Distance Matrix ###
@@ -227,118 +223,65 @@ grm = function(Y,
     if (nngp) {
         unique_coords <- unique(cbind(space.id, coords))
         unique_coords <- unique_coords[order(unique_coords$space.id), ]
-        coord_list <- order_coords(coords = unique_coords[, c("x", "y")],
-                                   space_id = unique_coords$space.id)
-        ordered_coords <- coord_list[["ordered_coords"]]
-        coord_ordering <- coord_list[["coord_ordering"]]
-        coord_reverse_ordering <- coord_list[["coord_reverse_ordering"]]
+
+        nngp_utils <- order_coords(coords = unique_coords[, c("x", "y")],
+                                   space_id = unique_coords$space.id) 
 
         ### get list of neighbors & dist matrices w.r.t. coord ordering
-        neighbors <- get_neighbors(ordered_coords, m = num_neighbors)
-        dist_matrices <- get_dist_matrices(ordered_coords, neighbors)
+        neighbors <- get_neighbors(nngp_utils$ordered_coords, m = num_neighbors)
+        dist_matrices <- get_dist_matrices(nngp_utils$ordered_coords, neighbors)
 
 
         #Pre-compute quantities for discrete theta (gp range parameter)
         if (!is.null(discrete.theta.alpha.values)) {
-            kernals_alpha <- lapply(discrete.theta.alpha.values, 
-                                    function(x) {
-                                        lapply(dist_matrices, 
-                                               function(y) {
-                                                    cov_kern(distance = y, 
-                                                             theta = x)
-                                               })
-                                    })
+            dnngpkernsalpha <- get_discrete_nngp_kernals(discrete.values = discrete.theta.alpha.values, 
+                                                    dist_matrices = dist_matrices,
+                                                    cov_kern = cov_kern) |> 
+                list_rename(name_append = "_alpha")
 
-            kernals_inv_alpha <- lapply(kernals_alpha, 
-                                                function(x) {
-                                                    lapply(x, 
-                                                           function(y) {
-                                                                solve(y)
-                                                           })
-                                                })
-
-            kernals_partial_inv_alpha <- lapply(kernals_alpha, 
-                                                function(x) {
-                                                    lapply(x[1:(length(x) - 1)],
-                                                           function(y) {
-                                                                solve(y[-1, -1, drop = FALSE])
-                                                           })
-                                                })
 
             #initialize at middle of range
-            which_theta_alpha_curr <- ceiling(length(discrete.theta.alpha.values) / 2)
-            theta_alpha = discrete.theta.alpha.values[which_theta_alpha_curr]
+            dthetaalpha <- init_discrete_theta(discrete.theta.alpha.values) |>
+                list_rename(name_append = "_alpha")
         }
 
         if (!is.null(discrete.theta.beta.values)) {
-            kernals_beta <- lapply(discrete.theta.beta.values, 
-                                    function(x) {
-                                        lapply(dist_matrices, 
-                                               function(y) {
-                                                    cov_kern(distance = y, 
-                                                             theta = x)
-                                               })
-                                    })
+            dnngpkernsbeta <- get_discrete_nngp_kernals(discrete.values = discrete.theta.beta.values, 
+                                      dist_matrices = dist_matrices,
+                                      cov_kern = cov_kern) |> 
+                list_rename(name_append = "_beta")
 
-            kernals_inv_beta <- lapply(kernals_beta, 
-                                                function(x) {
-                                                    lapply(x, 
-                                                           function(y) {
-                                                                solve(y)
-                                                           })
-                                                })
-
-            kernals_partial_inv_beta <- lapply(kernals_beta, 
-                                                function(x) {
-                                                    lapply(x[1:(length(x) - 1)],
-                                                           function(y) {
-                                                                solve(y[-1, -1, drop = FALSE])
-                                                           })
-                                                })
 
             #initialize at middle of range
-            which_theta_beta_curr <- ceiling(length(discrete.theta.beta.values) / 2)
-            theta_beta = discrete.theta.beta.values[which_theta_beta_curr]
+            dthetabeta <- init_discrete_theta(discrete.theta.beta.values) |>
+                list_rename(name_append = "_beta")
         }
 
     } else if (!nngp) {
 
         if (!is.null(discrete.theta.alpha.values)) {
 
-            kernals_alpha <- lapply(discrete.theta.alpha.values,
-                                   function(x) cov_kern(distance = dist.space.mat, 
-                                                        theta = x))
-            kernals_inv_alpha <- lapply(kernals_alpha, solve)
-            kernals_chol_alpha <- lapply(kernals_alpha, 
-                                   function(x) t(chol(x)))
-            kernals_chol_inv_alpha <- lapply(kernals_chol_alpha, 
-                                       function(x) solve(x))
-            kernals_det_alpha <- lapply(kernals_alpha, 
-                                  function(x) as.numeric(determinant(x)$modulus))
+            dgpkernsalpha <- get_discrete_gp_kernals(discrete.values = discrete.theta.alpha.values, 
+                                    dist.space.mat = dist.space.mat,
+                                    cov_kern = cov_kern) |> 
+                list_rename(name_append = "_alpha")
 
             #initialize at middle of range
-            which_theta_alpha_curr <- ceiling(length(discrete.theta.alpha.values) / 2)
-            theta_alpha = discrete.theta.alpha.values[which_theta_alpha_curr]
-
+            dthetaalpha <- init_discrete_theta(discrete.theta.alpha.values) |>
+                list_rename(name_append = "_alpha")
 
         }
 
         if (!is.null(discrete.theta.beta.values)) {
 
-            kernals_beta <- lapply(discrete.theta.beta.values,
-                                   function(x) cov_kern(distance = dist.space.mat, 
-                                                        theta = x))
-            kernals_inv_beta <- lapply(kernals_beta, solve)
-            kernals_chol_beta <- lapply(kernals_beta, 
-                                   function(x) t(chol(x)))
-            kernals_chol_inv_beta <- lapply(kernals_chol_beta, 
-                                       function(x) solve(x))
-            kernals_det_beta <- lapply(kernals_beta, 
-                                  function(x) as.numeric(determinant(x)$modulus))
+            dgpkernsbeta <- get_discrete_gp_kernals(discrete.values = discrete.theta.beta.values, 
+                                    dist.space.mat = dist.space.mat,
+                                    cov_kern = cov_kern) |> 
+                list_rename(name_append = "_beta")
 
             #initialize at middle of range
-            which_theta_beta_curr <- ceiling(length(discrete.theta.beta.values) / 2)
-            theta_beta = discrete.theta.beta.values[which_theta_beta_curr]
+            dthetabeta <- init_discrete_theta(discrete.theta.beta.values) |>
+                list_rename(name_append = "_beta")
 
         }
     }
@@ -479,7 +422,7 @@ grm = function(Y,
     omega_beta = 0
     if (include.multiplicative.weekly.resid) { 
         RRR = Y - mu - alpha_time[time.id]
-        beta_time=  1 / X_W * t(Gamma_time) %*% (X * RRR)
+        beta_time =  1 / X_W * t(Gamma_time) %*% (X * RRR)
         omega_beta = as.numeric(stats::var(beta_time, na.rm = T))
     }
     
@@ -644,10 +587,10 @@ grm = function(Y,
                     #calculate separately for each spacetime
                     for (st in unique(spacetime.id)) {
                         XXX_st <- XXX[space_to_spacetime_assign == st, , drop = FALSE]
-                        XXX_st_ord <- XXX_st[coord_ordering, , drop = FALSE]
+                        XXX_st_ord <- XXX_st[nngp_utils$coord_ordering, , drop = FALSE]
                         GtG_space_st <- GtG_space[space_to_spacetime_assign == st]
-                        GtG_space_st_ord <- GtG_space_st[coord_ordering]
-                        coords_st_ord <- ordered_coords
+                        GtG_space_st_ord <- GtG_space_st[nngp_utils$coord_ordering]
+                        coords_st_ord <- nngp_utils$ordered_coords
 
                         alpha_space_st <- alpha_space[space_to_spacetime_assign == st]
 
@@ -678,7 +621,7 @@ grm = function(Y,
                             alpha_space_st[j] <- stats::rnorm(1, cond_mean, sqrt(cond_cov))
                         }
                         #reverse order back to original
-                        alpha_space_st <- alpha_space_st[coord_reverse_ordering]
+                        alpha_space_st <- alpha_space_st[nngp_utils$coord_reverse_ordering]
                         alpha_space[space_to_spacetime_assign == st] <- alpha_space_st
                     }
 
@@ -693,10 +636,10 @@ grm = function(Y,
                     lik_cur <- 0
                     for (st in unique(spacetime.id)) {
                         alpha_space_st <- alpha_space[space_to_spacetime_assign == st]
-                        alpha_space_st <- alpha_space_st[coord_ordering]
+                        alpha_space_st <- alpha_space_st[nngp_utils$coord_ordering]
                         lik_prop <- lik_prop +
                             sum(dnngp(y = alpha_space_st,
-                                      ordered_coords = ordered_coords,
+                                      ordered_coords = nngp_utils$ordered_coords,
                                       neighbors = neighbors,
                                       dist_matrices = dist_matrices,
                                       phi = tau_prop,
@@ -705,7 +648,7 @@ grm = function(Y,
                                       log = T))
                         lik_cur <- lik_cur +
                             sum(dnngp(y = alpha_space_st,
-                                      ordered_coords = ordered_coords,
+                                      ordered_coords = nngp_utils$ordered_coords,
                                       neighbors = neighbors,
                                       dist_matrices = dist_matrices,
                                       phi = tau_alpha,
@@ -742,10 +685,10 @@ grm = function(Y,
                     lik_cur <- 0
                     for (st in unique(spacetime.id)) {
                         alpha_space_st <- alpha_space[space_to_spacetime_assign == st]
-                        alpha_space_st <- alpha_space_st[coord_ordering]
+                        alpha_space_st <- alpha_space_st[nngp_utils$coord_ordering]
                         lik_prop <- lik_prop +
                             sum(dnngp(y = alpha_space_st,
-                                      ordered_coords = ordered_coords,
+                                      ordered_coords = nngp_utils$ordered_coords,
                                       neighbors = neighbors,
                                       dist_matrices = dist_matrices,
                                       phi = tau_alpha,
@@ -754,7 +697,7 @@ grm = function(Y,
                                       log = T))
                         lik_cur <- lik_cur +
                             sum(dnngp(y = alpha_space_st,
-                                      ordered_coords = ordered_coords,
+                                      ordered_coords = nngp_utils$ordered_coords,
                                       neighbors = neighbors,
                                       dist_matrices = dist_matrices,
                                       phi = tau_alpha,
@@ -783,9 +726,9 @@ grm = function(Y,
 
                 } else if (!is.null(discrete.theta.alpha.values)) {
 
-                    kern_curr = kernals_alpha[[which_theta_alpha_curr]]
-                    kern_inv_curr = kernals_inv_alpha[[which_theta_alpha_curr]]
-                    kern_partial_inv_curr = kernals_partial_inv_alpha[[which_theta_alpha_curr]]
+                    kern_curr = dnngpkernsalpha$kernals_alpha[[dthetaalpha$which_theta_curr_alpha]]
+                    kern_inv_curr = dnngpkernsalpha$kernals_inv_alpha[[dthetaalpha$which_theta_curr_alpha]]
+                    kern_partial_inv_curr = dnngpkernsalpha$kernals_partial_inv_alpha[[dthetaalpha$which_theta_curr_alpha]]
                     MMM = MMM - alpha_space[Z_ID]
                     RRR = Y - MMM
                     XXX = 1 / sigma2 * t(Gamma_space) %*% RRR
@@ -795,10 +738,10 @@ grm = function(Y,
                     #calculate separately for each spacetime
                     for (st in unique(spacetime.id)) {
                         XXX_st <- XXX[space_to_spacetime_assign == st, , drop = FALSE]
-                        XXX_st_ord <- XXX_st[coord_ordering, , drop = FALSE]
+                        XXX_st_ord <- XXX_st[nngp_utils$coord_ordering, , drop = FALSE]
                         GtG_space_st <- GtG_space[space_to_spacetime_assign == st]
-                        GtG_space_st_ord <- GtG_space_st[coord_ordering]
-                        coords_st_ord <- ordered_coords
+                        GtG_space_st_ord <- GtG_space_st[nngp_utils$coord_ordering]
+                        coords_st_ord <- nngp_utils$ordered_coords
 
                         alpha_space_st <- alpha_space[space_to_spacetime_assign == st]
 
@@ -828,7 +771,7 @@ grm = function(Y,
                             alpha_space_st[j] <- stats::rnorm(1, cond_mean, sqrt(cond_cov))
                         }
                         #reverse order back to original
-                        alpha_space_st <- alpha_space_st[coord_reverse_ordering]
+                        alpha_space_st <- alpha_space_st[nngp_utils$coord_reverse_ordering]
                         alpha_space[space_to_spacetime_assign == st] <- alpha_space_st
                     }
 
@@ -843,10 +786,10 @@ grm = function(Y,
                     lik_cur <- 0
                     for (st in unique(spacetime.id)) {
                         alpha_space_st <- alpha_space[space_to_spacetime_assign == st]
-                        alpha_space_st <- alpha_space_st[coord_ordering]
+                        alpha_space_st <- alpha_space_st[nngp_utils$coord_ordering]
                          lik_prop <- lik_prop +
                              sum(dnngp_discrete_theta(y = alpha_space_st,
-                                                      ordered_coords = ordered_coords,
+                                                      ordered_coords = nngp_utils$ordered_coords,
                                                       neighbors = neighbors,
                                                       dist_matrices = dist_matrices,
                                                       phi = tau_prop,
@@ -856,7 +799,7 @@ grm = function(Y,
 
                         lik_cur <- lik_cur +
                             sum(dnngp_discrete_theta(y = alpha_space_st,
-                                                     ordered_coords = ordered_coords,
+                                                     ordered_coords = nngp_utils$ordered_coords,
                                                      neighbors = neighbors,
                                                      dist_matrices = dist_matrices,
                                                      phi = tau_alpha,
@@ -888,24 +831,24 @@ grm = function(Y,
                     #Update theta_alpha
                     if (!discrete.theta.gibbs) {
 
-                        discrete_theta_alpha_mh_jump <- get_discrete_theta_mh_jump(which_theta_alpha_curr, 
+                        discrete_theta_alpha_mh_jump <- get_discrete_theta_mh_jump(dthetaalpha$which_theta_curr_alpha, 
                                                                                     discrete.theta.alpha.values)
-                        which_theta_alpha_prop <- which_theta_alpha_curr + discrete_theta_alpha_mh_jump$jump
+                        which_theta_prop_alpha <- dthetaalpha$which_theta_curr_alpha + discrete_theta_alpha_mh_jump$jump
 
-                        theta_alpha_prop <- discrete.theta.alpha.values[[which_theta_alpha_prop]]
+                        theta_alpha_prop <- discrete.theta.alpha.values[[which_theta_prop_alpha]]
 
-                        kern_prop = kernals_alpha[[which_theta_alpha_prop]]
-                        kern_inv_prop = kernals_inv_alpha[[which_theta_alpha_prop]]
-                        kern_partial_inv_prop = kernals_partial_inv_alpha[[which_theta_alpha_prop]]
+                        kern_prop = dnngpkernsalpha$kernals_alpha[[which_theta_prop_alpha]]
+                        kern_inv_prop = dnngpkernsalpha$kernals_inv_alpha[[which_theta_prop_alpha]]
+                        kern_partial_inv_prop = dnngpkernsalpha$kernals_partial_inv_alpha[[which_theta_prop_alpha]]
 
                         lik_prop <- 0
                         lik_cur <- 0
                         for (st in unique(spacetime.id)) {
                             alpha_space_st <- alpha_space[space_to_spacetime_assign == st]
-                            alpha_space_st <- alpha_space_st[coord_ordering]
+                            alpha_space_st <- alpha_space_st[nngp_utils$coord_ordering]
                             lik_prop <- lik_prop +
                                 sum(dnngp_discrete_theta(y = alpha_space_st,
-                                                         ordered_coords = ordered_coords,
+                                                         ordered_coords = nngp_utils$ordered_coords,
                                                          neighbors = neighbors,
                                                          dist_matrices = dist_matrices,
                                                          phi = tau_alpha,
@@ -914,7 +857,7 @@ grm = function(Y,
                                                          log = T))
                             lik_cur <- lik_cur +
                                 sum(dnngp_discrete_theta(y = alpha_space_st,
-                                                         ordered_coords = ordered_coords,
+                                                         ordered_coords = nngp_utils$ordered_coords,
                                                          neighbors = neighbors,
                                                          dist_matrices = dist_matrices,
                                                          phi = tau_alpha,
@@ -937,7 +880,7 @@ grm = function(Y,
                             log(discrete_theta_alpha_mh_jump$lik_jump_curr_to_prop)
 
                         if (log(stats::runif(1)) < ratio) {
-                            which_theta_alpha_curr <- which_theta_alpha_prop
+                            dthetaalpha$which_theta_curr_alpha <- which_theta_prop_alpha
                             theta_alpha = theta_alpha_prop
                             theta.acc[1] = theta.acc[1] + 1
                         }
@@ -952,15 +895,15 @@ grm = function(Y,
                             alpha_space_st = alpha_space[space_to_spacetime_assign == st]
                             lik <- lik + mapply(function(x, y) {
                                                     sum(dnngp_discrete_theta(y = alpha_space_st,
-                                                                             ordered_coords = ordered_coords,
+                                                                             ordered_coords = nngp_utils$ordered_coords,
                                                                              neighbors = neighbors,
                                                                              dist_matrices = dist_matrices,
                                                                              phi = tau_alpha,
                                                                              kerns = x,
                                                                              kerns_partial_inv = y,
                                                                              log = T))},
-                                                kernals_alpha,
-                                                kernals_partial_inv_alpha)
+                                                dnngpkernsalpha$kernals_alpha,
+                                                dnngpkernsalpha$kernals_partial_inv_alpha)
 
 
                         }
@@ -972,7 +915,7 @@ grm = function(Y,
                         theta_alpha <- sample(x = discrete.theta.alpha.values, 
                                              size = 1, 
                                              prob = exp(lik - max(lik)))
-                        which_theta_alpha_curr <- which(discrete.theta.alpha.values == theta_alpha)
+                        dthetaalpha$which_theta_curr_alpha <- which(discrete.theta.alpha.values == theta_alpha)
                     }
 
                 }
@@ -1054,11 +997,11 @@ grm = function(Y,
 
                 } else if (!is.null(discrete.theta.alpha.values)) {
 
-                    kern_curr = kernals_alpha[[which_theta_alpha_curr]]
-                    kern_inv_curr = kernals_inv_alpha[[which_theta_alpha_curr]]
-                    kern_chol_curr = kernals_chol_alpha[[which_theta_alpha_curr]]
-                    kern_chol_inv_curr = kernals_chol_inv_alpha[[which_theta_alpha_curr]]
-                    kern_det_curr = kernals_det_alpha[[which_theta_alpha_curr]]
+                    kern_curr = dgpkernsalpha$kernals_alpha[[dthetaalpha$which_theta_curr_alpha]]
+                    kern_inv_curr = dgpkernsalpha$kernals_inv_alpha[[dthetaalpha$which_theta_curr_alpha]]
+                    kern_chol_curr = dgpkernsalpha$kernals_chol_alpha[[dthetaalpha$which_theta_curr_alpha]]
+                    kern_chol_inv_curr = dgpkernsalpha$kernals_chol_inv_alpha[[dthetaalpha$which_theta_curr_alpha]]
+                    kern_det_curr = dgpkernsalpha$kernals_det_alpha[[dthetaalpha$which_theta_curr_alpha]]
 
 
                     MMM = MMM - alpha_space[Z_ID] 
@@ -1096,16 +1039,16 @@ grm = function(Y,
                     #adjustment is the mh proposal likelihood adjustment
                     if (!discrete.theta.gibbs) {
 
-                        discrete_theta_alpha_mh_jump <- get_discrete_theta_mh_jump(which_theta_alpha_curr, 
+                        discrete_theta_alpha_mh_jump <- get_discrete_theta_mh_jump(dthetaalpha$which_theta_curr_alpha, 
                                                                                 discrete.theta.alpha.values)
 
-                        which_theta_alpha_prop <- which_theta_alpha_curr + discrete_theta_alpha_mh_jump$jump
-                        theta_alpha_prop = discrete.theta.alpha.values[which_theta_alpha_prop]
-                        kern_prop = kernals_alpha[[which_theta_alpha_prop]]
-                        kern_inv_prop = kernals_inv_alpha[[which_theta_alpha_prop]]
-                        kern_chol_prop = kernals_chol_alpha[[which_theta_alpha_prop]]
-                        kern_chol_inv_prop = kernals_chol_inv_alpha[[which_theta_alpha_prop]]
-                        kern_det_prop = kernals_det_alpha[[which_theta_alpha_prop]]
+                        which_theta_prop_alpha <- dthetaalpha$which_theta_curr_alpha + discrete_theta_alpha_mh_jump$jump
+                        theta_alpha_prop = discrete.theta.alpha.values[which_theta_prop_alpha]
+                        kern_prop = dgpkernsalpha$kernals_alpha[[which_theta_prop_alpha]]
+                        kern_inv_prop = dgpkernsalpha$kernals_inv_alpha[[which_theta_prop_alpha]]
+                        kern_chol_prop = dgpkernsalpha$kernals_chol_alpha[[which_theta_prop_alpha]]
+                        kern_chol_inv_prop = dgpkernsalpha$kernals_chol_inv_alpha[[which_theta_prop_alpha]]
+                        kern_det_prop = dgpkernsalpha$kernals_det_alpha[[which_theta_prop_alpha]]
 
                         SSS_chol_curr = sqrt(tau_alpha) * kern_chol_curr
                         SSS_det_curr = ncol(kern_curr) * log(tau_alpha) + kern_det_curr
@@ -1146,8 +1089,8 @@ grm = function(Y,
 
 
                         if(log(stats::runif(1)) < ratio) {
-                            which_theta_alpha_curr <- which_theta_alpha_prop
-                            theta_alpha = discrete.theta.alpha.values[which_theta_alpha_curr]
+                            dthetaalpha$which_theta_curr_alpha <- which_theta_prop_alpha
+                            theta_alpha = discrete.theta.alpha.values[dthetaalpha$which_theta_curr_alpha]
                             theta.acc[1] = theta.acc[1] + 1
                         }
 
@@ -1158,11 +1101,11 @@ grm = function(Y,
                         #adjustment is the mh proposal likelihood adjustment
 
 
-                        SSS_chol = lapply(kernals_chol_alpha, 
+                        SSS_chol = lapply(dgpkernsalpha$kernals_chol_alpha, 
                                                function(x) sqrt(tau_alpha) * x)
-                        SSS_det = lapply(kernals_det_alpha,
+                        SSS_det = lapply(dgpkernsalpha$kernals_det_alpha,
                                          function(x) N.space * log(tau_alpha) + x)
-                        SSS_chol_inv = lapply(kernals_chol_inv_alpha,
+                        SSS_chol_inv = lapply(dgpkernsalpha$kernals_chol_inv_alpha,
                                               function(x) (1 / sqrt(tau_alpha)) * x)
 
 
@@ -1183,7 +1126,7 @@ grm = function(Y,
                         theta_alpha <- sample(x = discrete.theta.alpha.values, 
                                              size = 1, 
                                              prob = exp(lik - max(lik)))
-                        which_theta_alpha_curr <- which(discrete.theta.alpha.values == theta_alpha)
+                        dthetaalpha$which_theta_curr_alpha <- which(discrete.theta.alpha.values == theta_alpha)
                     }
 
                 }
@@ -1273,11 +1216,11 @@ grm = function(Y,
 
                 } else if (!is.null(discrete.theta.beta.values)) {
 
-                    kern_curr = kernals_beta[[which_theta_beta_curr]]
-                    kern_inv_curr = kernals_inv_beta[[which_theta_beta_curr]]
-                    kern_chol_curr = kernals_chol_beta[[which_theta_beta_curr]]
-                    kern_chol_inv_curr = kernals_chol_inv_beta[[which_theta_beta_curr]]
-                    kern_det_curr = kernals_det_beta[[which_theta_beta_curr]]
+                    kern_curr = dgpkernsbeta$kernals_beta[[dthetabeta$which_theta_curr_beta]]
+                    kern_inv_curr = dgpkernsbeta$kernals_inv_beta[[dthetabeta$which_theta_curr_beta]]
+                    kern_chol_curr = dgpkernsbeta$kernals_chol_beta[[dthetabeta$which_theta_curr_beta]]
+                    kern_chol_inv_curr = dgpkernsbeta$kernals_chol_inv_beta[[dthetabeta$which_theta_curr_beta]]
+                    kern_det_curr = dgpkernsbeta$kernals_det_beta[[dthetabeta$which_theta_curr_beta]]
 
 
                     MMM = MMM - beta_space[Z_ID] * X
@@ -1316,17 +1259,17 @@ grm = function(Y,
                     #adjustment is the mh proposal likelihood adjustment
                     if (!discrete.theta.gibbs) {
 
-                        discrete_theta_beta_mh_jump <- get_discrete_theta_mh_jump(which_theta_beta_curr, 
+                        discrete_theta_beta_mh_jump <- get_discrete_theta_mh_jump(dthetabeta$which_theta_curr_beta, 
                                                                                   discrete.theta.beta.values)
 
 
-                        which_theta_beta_prop <- which_theta_beta_curr + discrete_theta_beta_mh_jump$jump
-                        theta_beta_prop = discrete.theta.beta.values[which_theta_beta_prop]
-                        kern_prop = kernals_beta[[which_theta_beta_prop]]
-                        kern_inv_prop = kernals_inv_beta[[which_theta_beta_prop]]
-                        kern_chol_prop = kernals_chol_beta[[which_theta_beta_prop]]
-                        kern_chol_inv_prop = kernals_chol_inv_beta[[which_theta_beta_prop]]
-                        kern_det_prop = kernals_det_beta[[which_theta_beta_prop]]
+                        which_theta_prop_beta <- dthetabeta$which_theta_curr_beta + discrete_theta_beta_mh_jump$jump
+                        theta_beta_prop = discrete.theta.beta.values[which_theta_prop_beta]
+                        kern_prop = dgpkernsbeta$kernals_beta[[which_theta_prop_beta]]
+                        kern_inv_prop = dgpkernsbeta$kernals_inv_beta[[which_theta_prop_beta]]
+                        kern_chol_prop = dgpkernsbeta$kernals_chol_beta[[which_theta_prop_beta]]
+                        kern_chol_inv_prop = dgpkernsbeta$kernals_chol_inv_beta[[which_theta_prop_beta]]
+                        kern_det_prop = dgpkernsbeta$kernals_det_beta[[which_theta_prop_beta]]
 
                         SSS_chol_curr = sqrt(tau_beta) * kern_chol_curr
                         SSS_det_curr = ncol(kern_curr) * log(tau_beta) + kern_det_curr
@@ -1366,8 +1309,8 @@ grm = function(Y,
 
 
                         if(log(stats::runif(1)) < ratio) {
-                            which_theta_beta_curr <- which_theta_beta_prop
-                            theta_beta = discrete.theta.beta.values[which_theta_beta_curr]
+                            dthetabeta$which_theta_curr_beta <- which_theta_prop_beta
+                            theta_beta = discrete.theta.beta.values[dthetabeta$which_theta_curr_beta]
                             theta.acc[2] = theta.acc[2] + 1
                         }
                     }
@@ -1378,11 +1321,11 @@ grm = function(Y,
                         #adjustment is the mh proposal likelihood adjustment
 
 
-                        SSS_chol = lapply(kernals_chol_beta, 
+                        SSS_chol = lapply(dgpkernsbeta$kernals_chol_beta, 
                                                function(x) sqrt(tau_beta) * x)
-                        SSS_det = lapply(kernals_det_beta,
+                        SSS_det = lapply(dgpkernsbeta$kernals_det_beta,
                                          function(x) N.space * log(tau_beta) + x)
-                        SSS_chol_inv = lapply(kernals_chol_inv_beta,
+                        SSS_chol_inv = lapply(dgpkernsbeta$kernals_chol_inv_beta,
                                               function(x) (1 / sqrt(tau_beta)) * x)
 
 
@@ -1405,7 +1348,7 @@ grm = function(Y,
                         theta_beta <- sample(x = discrete.theta.beta.values, 
                                              size = 1, 
                                              prob = exp(lik - max(lik)))
-                        which_theta_beta_curr <- which(discrete.theta.beta.values == theta_beta)
+                        dthetabeta$which_theta_curr_beta <- which(discrete.theta.beta.values == theta_beta)
                     }
                 }
 
@@ -1422,10 +1365,10 @@ grm = function(Y,
                     #calculate separately for each spacetime
                     for (st in unique(spacetime.id)) {
                         XXX_st <- XXX[space_to_spacetime_assign == st, , drop = FALSE]
-                        XXX_st_ord <- XXX_st[coord_ordering, , drop = FALSE]
+                        XXX_st_ord <- XXX_st[nngp_utils$coord_ordering, , drop = FALSE]
                         X_S_st <- X_S[space_to_spacetime_assign == st]
-                        X_S_st_ord <- X_S_st[coord_ordering]
-                        coords_st_ord <- ordered_coords
+                        X_S_st_ord <- X_S_st[nngp_utils$coord_ordering]
+                        coords_st_ord <- nngp_utils$ordered_coords
 
                         beta_space_st <- beta_space[space_to_spacetime_assign == st]
                         SSS_n <- tau_beta * cov_kern(distance = 0, 
@@ -1455,7 +1398,7 @@ grm = function(Y,
                             beta_space_st[j] <- stats::rnorm(1, cond_mean, sqrt(cond_cov))
                         }
                         #reverse order back to original
-                        beta_space_st <- beta_space_st[coord_reverse_ordering]
+                        beta_space_st <- beta_space_st[nngp_utils$coord_reverse_ordering]
                         beta_space[space_to_spacetime_assign == st] <- beta_space_st
                     }
 
@@ -1470,10 +1413,10 @@ grm = function(Y,
                     lik_cur <- 0
                     for (st in unique(spacetime.id)) {
                         beta_space_st <- beta_space[space_to_spacetime_assign == st]
-                        beta_space_st <- beta_space_st[coord_ordering]
+                        beta_space_st <- beta_space_st[nngp_utils$coord_ordering]
                         lik_prop <- lik_prop +
                             sum(dnngp(y = beta_space_st,
-                                      ordered_coords = ordered_coords,
+                                      ordered_coords = nngp_utils$ordered_coords,
                                       neighbors = neighbors,
                                       dist_matrices = dist_matrices,
                                       phi = tau_prop,
@@ -1482,7 +1425,7 @@ grm = function(Y,
                                       log = T))
                         lik_cur <- lik_cur +
                             sum(dnngp(y = beta_space_st,
-                                      ordered_coords = ordered_coords,
+                                      ordered_coords = nngp_utils$ordered_coords,
                                       neighbors = neighbors,
                                       dist_matrices = dist_matrices,
                                       phi = tau_beta,
@@ -1518,10 +1461,10 @@ grm = function(Y,
                     lik_cur <- 0
                     for (st in unique(spacetime.id)) {
                         beta_space_st <- beta_space[space_to_spacetime_assign == st]
-                        beta_space_st <- beta_space_st[coord_ordering]
+                        beta_space_st <- beta_space_st[nngp_utils$coord_ordering]
                         lik_prop <- lik_prop +
                             sum(dnngp(y = beta_space_st,
-                                      ordered_coords = ordered_coords,
+                                      ordered_coords = nngp_utils$ordered_coords,
                                       neighbors = neighbors,
                                       dist_matrices = dist_matrices,
                                       phi = tau_beta,
@@ -1530,7 +1473,7 @@ grm = function(Y,
                                       log = T))
                         lik_cur <- lik_cur +
                             sum(dnngp(y = beta_space_st,
-                                      ordered_coords = ordered_coords,
+                                      ordered_coords = nngp_utils$ordered_coords,
                                       neighbors = neighbors,
                                       dist_matrices = dist_matrices,
                                       phi = tau_beta,
@@ -1561,9 +1504,9 @@ grm = function(Y,
 
                 } else if (!is.null(discrete.theta.beta.values)) {
 
-                    kern_curr = kernals_beta[[which_theta_beta_curr]]
-                    kern_inv_curr = kernals_inv_beta[[which_theta_beta_curr]]
-                    kern_partial_inv_curr = kernals_partial_inv_beta[[which_theta_beta_curr]]
+                    kern_curr = dnngpkernsbeta$kernals_beta[[dthetabeta$which_theta_curr_beta]]
+                    kern_inv_curr = dnngpkernsbeta$kernals_inv_beta[[dthetabeta$which_theta_curr_beta]]
+                    kern_partial_inv_curr = dnngpkernsbeta$kernals_partial_inv_beta[[dthetabeta$which_theta_curr_beta]]
                     MMM = MMM - beta_space[Z_ID] * X
                     RRR = Y - MMM
                     XXX = 1 / sigma2 * t(Gamma_space) %*% (X * RRR)
@@ -1573,10 +1516,10 @@ grm = function(Y,
                     #calculate separately for each spacetime
                     for (st in unique(spacetime.id)) {
                         XXX_st <- XXX[space_to_spacetime_assign == st, , drop = FALSE]
-                        XXX_st_ord <- XXX_st[coord_ordering, , drop = FALSE]
+                        XXX_st_ord <- XXX_st[nngp_utils$coord_ordering, , drop = FALSE]
                         X_S_st <- X_S[space_to_spacetime_assign == st]
-                        X_S_st_ord <- X_S_st[coord_ordering]
-                        coords_st_ord <- ordered_coords
+                        X_S_st_ord <- X_S_st[nngp_utils$coord_ordering]
+                        coords_st_ord <- nngp_utils$ordered_coords
 
                         beta_space_st <- beta_space[space_to_spacetime_assign == st]
 
@@ -1605,7 +1548,7 @@ grm = function(Y,
                             beta_space_st[j] <- stats::rnorm(1, cond_mean, sqrt(cond_cov))
                         }
                         #reverse order back to original
-                        beta_space_st <- beta_space_st[coord_reverse_ordering]
+                        beta_space_st <- beta_space_st[nngp_utils$coord_reverse_ordering]
                         beta_space[space_to_spacetime_assign == st] <- beta_space_st
                     }
 
@@ -1620,10 +1563,10 @@ grm = function(Y,
                     lik_cur <- 0
                     for (st in unique(spacetime.id)) {
                         beta_space_st <- beta_space[space_to_spacetime_assign == st]
-                        beta_space_st <- beta_space_st[coord_ordering]
+                        beta_space_st <- beta_space_st[nngp_utils$coord_ordering]
                         lik_prop <- lik_prop +
                             sum(dnngp_discrete_theta(y = beta_space_st,
-                                                     ordered_coords = ordered_coords,
+                                                     ordered_coords = nngp_utils$ordered_coords,
                                                      neighbors = neighbors,
                                                      dist_matrices = dist_matrices,
                                                      phi = tau_prop,
@@ -1632,7 +1575,7 @@ grm = function(Y,
                                                      log = T))
                         lik_cur <- lik_cur +
                             sum(dnngp_discrete_theta(y = beta_space_st,
-                                                     ordered_coords = ordered_coords,
+                                                     ordered_coords = nngp_utils$ordered_coords,
                                                      neighbors = neighbors,
                                                      dist_matrices = dist_matrices,
                                                      phi = tau_beta,
@@ -1663,24 +1606,24 @@ grm = function(Y,
                     #Update theta_beta
                     if (!discrete.theta.gibbs) {
 
-                        discrete_theta_beta_mh_jump <- get_discrete_theta_mh_jump(which_theta_beta_curr, 
+                        discrete_theta_beta_mh_jump <- get_discrete_theta_mh_jump(dthetabeta$which_theta_curr_beta, 
                                                                                     discrete.theta.beta.values)
-                        which_theta_beta_prop <- which_theta_beta_curr + discrete_theta_beta_mh_jump$jump
+                        which_theta_prop_beta <- dthetabeta$which_theta_curr_beta + discrete_theta_beta_mh_jump$jump
 
-                        theta_beta_prop <- discrete.theta.beta.values[[which_theta_beta_prop]]
+                        theta_beta_prop <- discrete.theta.beta.values[[which_theta_prop_beta]]
 
-                        kern_prop = kernals_beta[[which_theta_beta_prop]]
-                        kern_inv_prop = kernals_inv_alpha[[which_theta_beta_prop]]
-                        kern_partial_inv_prop = kernals_partial_inv_beta[[which_theta_beta_prop]]
+                        kern_prop = dnngpkernsbeta$kernals_beta[[which_theta_prop_beta]]
+                        kern_inv_prop = dnngpkernsalpha$kernals_inv_alpha[[which_theta_prop_beta]]
+                        kern_partial_inv_prop = dnngpkernsbeta$kernals_partial_inv_beta[[which_theta_prop_beta]]
 
                         lik_prop <- 0
                         lik_cur <- 0
                         for (st in unique(spacetime.id)) {
                             beta_space_st <- beta_space[space_to_spacetime_assign == st]
-                            beta_space_st <- beta_space_st[coord_ordering]
+                            beta_space_st <- beta_space_st[nngp_utils$coord_ordering]
                             lik_prop <- lik_prop +
                                 sum(dnngp_discrete_theta(y = beta_space_st,
-                                                         ordered_coords = ordered_coords,
+                                                         ordered_coords = nngp_utils$ordered_coords,
                                                          neighbors = neighbors,
                                                          dist_matrices = dist_matrices,
                                                          phi = tau_beta,
@@ -1689,7 +1632,7 @@ grm = function(Y,
                                                          log = T))
                             lik_cur <- lik_cur +
                                 sum(dnngp_discrete_theta(y = beta_space_st,
-                                                         ordered_coords = ordered_coords,
+                                                         ordered_coords = nngp_utils$ordered_coords,
                                                          neighbors = neighbors,
                                                          dist_matrices = dist_matrices,
                                                          phi = tau_beta,
@@ -1712,7 +1655,7 @@ grm = function(Y,
                             log(discrete_theta_beta_mh_jump$lik_jump_curr_to_prop)
 
                         if (log(stats::runif(1)) < ratio) {
-                            which_theta_beta_curr <- which_theta_beta_prop
+                            dthetabeta$which_theta_curr_beta <- which_theta_prop_beta
                             theta_beta = theta_beta_prop
                             theta.acc[1] = theta.acc[1] + 1
                         }
@@ -1727,15 +1670,15 @@ grm = function(Y,
                             beta_space_st = beta_space[space_to_spacetime_assign == st]
                             lik <- lik + mapply(function(x, y) {
                                                     sum(dnngp_discrete_theta(y = beta_space_st,
-                                                                             ordered_coords = ordered_coords,
+                                                                             ordered_coords = nngp_utils$ordered_coords,
                                                                              neighbors = neighbors,
                                                                              dist_matrices = dist_matrices,
                                                                              phi = tau_beta,
                                                                              kerns = x,
                                                                              kerns_partial_inv = y,
                                                                              log = T))},
-                                                kernals_beta,
-                                                kernals_partial_inv_beta)
+                                                dnngpkernsbeta$kernals_beta,
+                                                dnngpkernsbeta$kernals_partial_inv_beta)
 
 
                         }
@@ -1747,7 +1690,7 @@ grm = function(Y,
                         theta_beta <- sample(x = discrete.theta.beta.values, 
                                              size = 1, 
                                              prob = exp(lik - max(lik)))
-                        which_theta_beta_curr <- which(discrete.theta.beta.values == theta_beta)
+                        dthetabeta$which_theta_curr_beta <- which(discrete.theta.beta.values == theta_beta)
                     }
 
                 }
@@ -1829,11 +1772,11 @@ grm = function(Y,
             tau_beta.save[k] = tau_beta
        
             if (!is.null(discrete.theta.alpha.values)) {
-                which.theta.alpha.discrete[k] = which_theta_alpha_curr
+                which.theta.alpha.discrete[k] = dthetaalpha$which_theta_curr_alpha
             }
 
             if (!is.null(discrete.theta.beta.values)) {
-                which.theta.beta.discrete[k] = which_theta_beta_curr
+                which.theta.beta.discrete[k] = dthetabeta$which_theta_curr_beta
             }
 
             Y.hat = Y.hat + MMM / K
@@ -1906,26 +1849,36 @@ grm = function(Y,
 
     nngp.info.save <- NULL
     if (nngp) {
-      nngp.info.save <- list(ordered.coords = ordered_coords,
-                             coord.ordering = coord_ordering,
-                             coord.reverse.ordering = coord_reverse_ordering,
-                             neighbors = neighbors,
-                             dist.matrices = dist_matrices,
-                             space.to.spacetime.assign = space_to_spacetime_assign,
-                             num_neighbors = num_neighbors)
-    }
+        nngp.info.save <- list(ordered.coords = nngp_utils$ordered_coords,
+                               coord.ordering = nngp_utils$coord_ordering,
+                               coord.reverse.ordering = nngp_utils$coord_reverse_ordering,
+                               neighbors = neighbors,
+                               dist.matrices = dist_matrices,
+                               space.to.spacetime.assign = space_to_spacetime_assign,
+                               num_neighbors = num_neighbors)
+        discrete.theta.alpha.info.save <- NULL
+        if (!is.null(discrete.theta.alpha.values)) {
+            discrete.theta.alpha.info.save <- list(which.theta.alpha.discrete = which.theta.alpha.discrete,
+                                                   kernals.inv.alpha = dnngpkernsalpha$kernals_inv_alpha)
+        }
 
-    discrete.theta.alpha.info.save <- NULL
-    if (!is.null(discrete.theta.alpha.values)) {
-        discrete.theta.alpha.info.save <- list(which.theta.alpha.discrete = which.theta.alpha.discrete,
-                                               kernals.inv.alpha = kernals_inv_alpha)
+        discrete.theta.beta.info.save <- NULL
+        if (!is.null(discrete.theta.beta.values)) {
+            discrete.theta.beta.info.save <- list(which.theta.beta.discrete = which.theta.beta.discrete,
+                                                  kernals.inv.beta = dnngpkernsbeta$kernals_inv_beta)
+        }
+    } else if (!nngp) {
+        discrete.theta.alpha.info.save <- NULL
+        if (!is.null(discrete.theta.alpha.values)) {
+            discrete.theta.alpha.info.save <- list(which.theta.alpha.discrete = which.theta.alpha.discrete,
+                                                   kernals.inv.alpha = dgpkernsalpha$kernals_inv_alpha)
+        }
 
-    }
-
-    discrete.theta.beta.info.save <- NULL
-    if (!is.null(discrete.theta.beta.values)) {
-        discrete.theta.beta.info.save <- list(which.theta.beta.discrete = which.theta.beta.discrete,
-                                               kernals.inv.beta = kernals_inv_beta)
+        discrete.theta.beta.info.save <- NULL
+        if (!is.null(discrete.theta.beta.values)) {
+            discrete.theta.beta.info.save <- list(which.theta.beta.discrete = which.theta.beta.discrete,
+                                                  kernals.inv.beta = dgpkernsbeta$kernals_inv_beta)
+        }
     }
     
     list(delta = delta.save, 
