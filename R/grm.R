@@ -1740,7 +1740,7 @@ grm <- function(Y,
      
         ###Save Samples 
      
-        if (i > burn & i %% thin == 0) {
+        if (i > burn & ((i - burn) %% thin == 0)) {
             k = (i - burn) / thin
 
             #Save statistics

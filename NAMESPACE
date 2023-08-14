@@ -2,10 +2,8 @@
 
 export(create_cv)
 export(ensemble_spatial)
-export(first_fcn)
 export(gap_fill)
 export(grm)
 export(grm_cv)
 export(grm_pred)
-export(second_fcn)
 export(weight_pred)
