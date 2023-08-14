@@ -17,7 +17,7 @@
 #' 
 #' @export
 
-gap_fill = function(grm.pred.1,
+gap_fill <- function(grm.pred.1,
                     grm.pred.2,
                     date.pred.1,
                     date.pred.2,
@@ -36,8 +36,8 @@ gap_fill = function(grm.pred.1,
                                 grm.pred.2$space.id, 
                                 sep = "_")
 
-    Y.pred.1 = grm.pred.1$estimate
-    Y.sd.1 = grm.pred.1$sd
+    Y.pred.1 <- grm.pred.1$estimate
+    Y.sd.1 <- grm.pred.1$sd
 
     Y.pred.2 <- grm.pred.2$estimate[match(grm.pred.1$link_id,
                                           grm.pred.2$link_id)]
@@ -46,25 +46,25 @@ gap_fill = function(grm.pred.1,
 
 
   
-    W = 1 / (exp(-weights) + 1)
-    W.mean =  apply(W, 1, mean)
-    W.sd =  apply(1 / (exp(-weights) + 1), 1, stats::sd)
+    W <- 1 / (exp(-weights) + 1)
+    W.mean <-  apply(W, 1, mean)
+    W.sd <-  apply(1 / (exp(-weights) + 1), 1, stats::sd)
       
-    which.use = which(!is.na(Y.pred.2))
+    which.use <- which(!is.na(Y.pred.2))
       
-    W.space = W.mean[space.id[which.use]] 
+    W.space <- W.mean[space.id[which.use]] 
       
-    Est = (Y.pred.1[which.use]) * W.space + Y.pred.2[which.use] * (1 - W.space)
-    Est.SD = sqrt((Y.sd.1[which.use])^2 * W.space + 
+    Est <- (Y.pred.1[which.use]) * W.space + Y.pred.2[which.use] * (1 - W.space)
+    Est.SD <- sqrt((Y.sd.1[which.use])^2 * W.space + 
                   Y.sd.2[which.use]^2 * (1 - W.space) + 
                   (Y.pred.1[which.use]^2 * W.space + 
                    Y.pred.2[which.use]^2 * (1 - W.space) - Est^2))
       
       
-    Est.ensemb = Y.pred.1
-    Est.ensemb[which.use] = Est
-    SD.ensemb = Y.sd.1
-    SD.ensemb[which.use] = Est.SD
+    Est.ensemb <- Y.pred.1
+    Est.ensemb[which.use] <- Est
+    SD.ensemb <- Y.sd.1
+    SD.ensemb[which.use] <- Est.SD
       
     list(ensemble.estimate = Est.ensemb,
          ensemble.sd = SD.ensemb)

@@ -157,3 +157,6 @@ dnngp_discrete_theta <- function(y, ordered_coords, neighbors, dist_matrices, ph
     }
     return(d)
 }
+
+
+

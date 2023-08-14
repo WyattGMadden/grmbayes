@@ -70,7 +70,7 @@ create_cv <- function(space.id,
                 cv_id_i <- (1:num.folds)[(1:obs_for_site_i) %% num.folds + 1]
 
                 #shuffle cv id's
-                cv_id_i = sample(cv_id_i, replace = F)
+                cv_id_i <- sample(cv_id_i, replace = F)
             
                 cv_id[space_id_cv == i] <- cv_id_i
             }

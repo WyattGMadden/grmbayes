@@ -13,7 +13,7 @@
 #' 
 #' 
 #' @export
-grm_cv = function(Y, 
+grm_cv <- function(Y, 
                   X, 
                   cv.object,
                   L = NULL, 
@@ -62,7 +62,7 @@ grm_cv = function(Y,
 
     cv.id <- cv.object$cv.id
 
-    Y.cv = data.frame(time_id = time.id, 
+    Y.cv <- data.frame(time_id = time.id, 
                       space_id = space.id, 
                       obs = Y, 
                       estimate = NA, 
@@ -89,41 +89,41 @@ grm_cv = function(Y,
         test.id.remove <- (min(time.id[train.id]) > time.id | max(time.id[train.id]) < time.id) & test.id.temp
         test.id <- test.id.temp & !test.id.remove
 
-        time.id.train = time.id[train.id]
-        time.id.test = time.id[test.id]
+        time.id.train <- time.id[train.id]
+        time.id.test <- time.id[test.id]
 
-        Y.train = Y[train.id]
-        Y.test = Y[test.id]
+        Y.train <- Y[train.id]
+        Y.test <- Y[test.id]
 
-        X.train = X[train.id]
-        X.test = X[test.id]
+        X.train <- X[train.id]
+        X.test <- X[test.id]
     
         #Subset of L matrix based on variable s
-        L = as.matrix(L)
-        L.train = L[train.id, , drop = FALSE]
-        L.test = L[test.id, , drop = FALSE]
-        M = as.matrix(M)
-        M.train = M[train.id, , drop = FALSE]
-        M.test = M[test.id, , drop = FALSE]
+        L <- as.matrix(L)
+        L.train <- L[train.id, , drop = FALSE]
+        L.test <- L[test.id, , drop = FALSE]
+        M <- as.matrix(M)
+        M.train <- M[train.id, , drop = FALSE]
+        M.test <- M[test.id, , drop = FALSE]
     
-        space.id.train = space.id[train.id]
-        space.id.test = space.id[test.id]
+        space.id.train <- space.id[train.id]
+        space.id.test <- space.id[test.id]
 
         #grm requires space.id to be from 1:max(space_id)
         #spatial cross validation breaks this assumption (missing space_id values)
         #here we create temporary space.id values that are from 1:length(unique(space.id))
-        space.id.train.key = sort(unique(space.id.train))
-        space.id.test.key = sort(unique(space.id.test))
-        space.id.train.temp = sapply(space.id.train, 
+        space.id.train.key <- sort(unique(space.id.train))
+        space.id.test.key <- sort(unique(space.id.test))
+        space.id.train.temp <- sapply(space.id.train, 
                                      function(x) which(space.id.train.key == x))
-        space.id.test.temp = sapply(space.id.test,
+        space.id.test.temp <- sapply(space.id.test,
                                     function(x) which(space.id.test.key == x))
-        spacetime.id.train = spacetime.id[train.id]
-        spacetime.id.test = spacetime.id[test.id]
-        coords.train = coords[train.id, ]
-        coords.test = coords[test.id, ]
+        spacetime.id.train <- spacetime.id[train.id]
+        spacetime.id.test <- spacetime.id[test.id]
+        coords.train <- coords[train.id, ]
+        coords.test <- coords[test.id, ]
    
-        fit.cv = grm(Y = Y.train, 
+        fit.cv <- grm(Y = Y.train, 
                      X = X.train, 
                      L = L.train, 
                      M = M.train, 
@@ -184,7 +184,7 @@ grm_cv = function(Y,
         }
 
 
-        cv.results = grm_pred(grm.fit = fit.cv, 
+        cv.results <- grm_pred(grm.fit = fit.cv, 
                               n.iter = (n.iter - burn) / thin,
                               X.pred = X.test, 
                               L.pred = L.test, 
@@ -199,13 +199,13 @@ grm_cv = function(Y,
 
 
 
-        Y.cv$estimate[test.id] = cv.results$estimate
-        Y.cv$sd[test.id] = cv.results$sd
+        Y.cv$estimate[test.id] <- cv.results$estimate
+        Y.cv$sd[test.id] <- cv.results$sd
 
     }
  
-    Y.cv$upper_95 = Y.cv$estimate + 1.96 * Y.cv$sd
-    Y.cv$lower_95 = Y.cv$estimate - 1.96 * Y.cv$sd
+    Y.cv$upper_95 <- Y.cv$estimate + 1.96 * Y.cv$sd
+    Y.cv$lower_95 <- Y.cv$estimate - 1.96 * Y.cv$sd
   
     return(Y.cv)
 }
