@@ -56,7 +56,7 @@
 #' 
 #' 
 #' @export
-grm = function(Y, 
+grm <- function(Y, 
                X, 
                L = NULL, 
                M = NULL, 

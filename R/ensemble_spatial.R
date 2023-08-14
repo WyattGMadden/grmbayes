@@ -25,7 +25,7 @@
 #' @export
 
 
-ensemble_spatial = function(grm.fit.cv.1,
+ensemble_spatial <- function(grm.fit.cv.1,
                             grm.fit.cv.2,
                             date.Y.1,
                             date.Y.2,
