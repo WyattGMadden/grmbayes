@@ -15,7 +15,7 @@ The goal of ensembleDownscaleR is to …
 You can install the development version of ensembleDownscaleR like so:
 
 ``` r
-devtools::install_github("WyattGMadden/ensembleDownscaleR")
+devtools::install_github("WyattGMadden/grmbayes")
 ```
 
 ## Example
@@ -23,7 +23,7 @@ devtools::install_github("WyattGMadden/ensembleDownscaleR")
 ### Stage 1
 
 ``` r
-library(ensembleDownscaleR)
+library(grmbayes)
 
 ?ctm_pm25
 
@@ -153,43 +153,4 @@ maia_pred <- grm_pred(grm.fit = maia_fit,
                       include.multiplicative.annual.resid = T,
                       n.iter = 100,
                       verbose = T)
-```
-
-### Stage 3
-
-``` r
-
-ensemble_fit <- ensemble_spatial(grm.fit.cv.1 = ctm_fit_cv,
-                                 grm.fit.cv.2 = maia_fit_cv,
-                                 date.Y.1 = ctm_pm25$date,
-                                 date.Y.2 = maia_pm25$date,
-                                 coords.Y.1 = ctm_pm25[, c("x", "y")],
-                                 space.id.Y.1 = ctm_pm25$space_id,
-                                 n.iter = 5000, 
-                                 burn = 1000, 
-                                 thin = 4,
-                                 tau.a = 0.001, 
-                                 tau.b = 0.001, 
-                                 theta.tune = 0.2, 
-                                 theta.a = 5, 
-                                 theta.b = 0.05)
-```
-
-### Stage 4
-
-``` r
-
-weight_preds <- weight_pred(ensemble.fit = ensemble_fit,
-                            coords.Y.1 = ctm_pm25[, c("x", "y")], 
-                            space.id.Y.1 = ctm_pm25$space_id, 
-                            coords.pred.1 = ctm_preds[, c("x", "y")],
-                            space.id.pred.1 = ctm_preds$space_id)
-
-
-results <- gap_fill(grm.pred.1 = ctm_pred,
-                    grm.pred.2 = maia_pred,
-                    date.pred.1 = ctm_preds$date,
-                    date.pred.2 = maia_preds$date, 
-                    space.id = ctm_pred$space.id, 
-                    weights = weight_preds)
 ```
