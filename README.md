@@ -1,14 +1,15 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# ensembleDownscaleR
+# grmbayes
 
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/WyattGMadden/ensembleDownscaleR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/WyattGMadden/ensembleDownscaleR/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-The goal of ensembleDownscaleR is to …
+The goal of grm is to provide functions for fitting efficient Bayesian
+geostatistical regression models.
 
 ## Installation
 
