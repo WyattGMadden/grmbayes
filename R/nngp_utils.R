@@ -39,15 +39,19 @@ get_neighbors <- function(ordered_coords, m) {
 
 #get neighbors from a reference set of ordered coordinates
 get_neighbors_ref <- function(ordered_coords, pred_coords, m){
-    full_coords <- rbind(ordered_coords, pred_coords)
-    full_dist_mat <- as.matrix(stats::dist(full_coords, 
-                                           upper = TRUE, 
-                                           diag = TRUE))
-    dist_mat_12 <- full_dist_mat[1:nrow(ordered_coords), (nrow(ordered_coords) + 1):nrow(full_coords)]
-    min_m_indices <- apply(dist_mat_12, 2, order)[1:m, ]
-    #convert matrix to list of column vectors
-    neighbors_pred <- lapply(seq_len(ncol(min_m_indices)), 
-                             function(i) min_m_indices[, i])
+    neighbors_pred <- list()
+    ordered_coords_temp <- ordered_coords[1:20, ]
+    pred_coords_temp <- pred_coords[1:20, ]
+
+    for (i in 1:nrow(pred_coords)) {
+        dist_to_i <- euc_dist(pred_coords[i, "x"], 
+                              pred_coords[i, "y"], 
+                              ordered_coords[, "x"], 
+                              ordered_coords[, "y"])  
+        #get the m neighbor index wrt full coords
+        neighbors_pred[[i]] <- order(dist_to_i)[1:(min(m, length(dist_to_i)))]
+    }
+
     return(neighbors_pred)
 }
 
