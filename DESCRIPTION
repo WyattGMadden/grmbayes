@@ -1,5 +1,5 @@
-Package: ensembleDownscaleR
-Title: What the Package Does (One Line, Title Case)
+Package: grmbayes
+Title: Bayesian geostatistical regression models
 Version: 0.0.0.9000
 Authors@R: 
     person("Wyatt", "Madden", , "wyattgmadden@gmail.com", role = c("aut", "cre"),
