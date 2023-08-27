@@ -23,8 +23,8 @@
 
 grm_pred <- function(grm.fit,
                     X.pred, 
-                    L.pred, 
-                    M.pred, 
+                    L.pred = NULL, 
+                    M.pred = NULL, 
                     coords.Y, 
                     space.id.Y,
                     coords.pred, 
@@ -57,22 +57,26 @@ grm_pred <- function(grm.fit,
         ###standardize X, L and M###
         ############################
         X.pred <- scale(X.pred)
-        L.pred <- as.matrix(L.pred)
-        M.pred <- as.matrix(M.pred)
-        # scale unless variable is all one value 
-        #(can happen in cross validation with binary variables)
-        L.pred <- apply(X = L.pred, 
-                        MARGIN = 2, 
-                        FUN = function(x) ifelse(length(unique(x)) != 1,
-                                                scale(x),
-                                                x))
-        # scale unless variable is all one value 
-        #(can happen in cross validation with binary variables)
-        M.pred <- apply(X = M.pred, 
-                        MARGIN = 2, 
-                        FUN = function(x) ifelse(length(unique(x)) <= 1,
-                                                scale(x),
-                                                x))
+        if (!is.null(L.pred)) {
+            L.pred <- as.matrix(L.pred)
+            # scale unless variable is all one value 
+            #(can happen in cross validation with binary variables)
+            L.pred <- apply(X = L.pred, 
+                            MARGIN = 2, 
+                            FUN = function(x) ifelse(length(unique(x)) != 1,
+                                                     scale(x),
+                                                     x))
+        }
+        if (!is.null(M.pred)) {
+            M.pred <- as.matrix(M.pred)
+            # scale unless variable is all one value 
+            #(can happen in cross validation with binary variables)
+            M.pred <- apply(X = M.pred, 
+                            MARGIN = 2, 
+                            FUN = function(x) ifelse(length(unique(x)) <= 1,
+                                                    scale(x),
+                                                    x))
+        }
 
 
 
@@ -408,8 +412,6 @@ grm_pred <- function(grm.fit,
 
     id.temp <- paste0(space.id, "_", spacetime.id)
     
-    delta <- as.matrix(grm.fit$delta)
-    gamma <- as.matrix(grm.fit$gamma)
 
     
     
@@ -420,11 +422,17 @@ grm_pred <- function(grm.fit,
         slope <- grm.fit$others$beta0[m] + 
             grm.fit$beta.time[time.id, m + 1] + 
             beta_space_pred[match(id.temp, id.temp.pred), m + 2]
-        fix.L <- L.pred %*% t(as.matrix(grm.fit$gamma[m, ]))
-        fix.M <- M.pred %*% t(as.matrix(grm.fit$delta[m, ]))
       
-        pred.mu <- intercept + slope * X.pred + 
-            as.vector(fix.L) + as.vector(fix.M)
+        pred.mu <- intercept + slope * X.pred
+        if (!is.null(grm.fit$gamma)) {
+            pred.mu <- pred.mu +
+                as.vector(L.pred %*% t(as.matrix(grm.fit$gamma[m, ])))
+        }
+        if (!is.null(grm.fit$delta)) {
+            pred.mu <- pred.mu +
+                as.vector(M.pred %*% t(as.matrix(grm.fit$delta[m, ])))
+        }  
+
         pred.mu <- pred.mu + stats::rnorm(length(pred.mu), 
                                          0, 
                                          sqrt(grm.fit$others$sigma2[m])) 

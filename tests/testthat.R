@@ -9,4 +9,4 @@
 library(testthat)
 library(grmbayes)
 
-test_check("ensembleDownscaleR")
+test_check("grmbayes")

@@ -59,7 +59,6 @@ ctm_fit <- grm(Y = ctm_pm25$pm25,
 
 
 
-
 cv_id_ctm_ord <- create_cv(space.id = ctm_pm25$space_id,
                            time.id = ctm_pm25$time_id, 
                            type = "ordinary")

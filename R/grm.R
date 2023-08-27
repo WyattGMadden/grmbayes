@@ -446,12 +446,16 @@ grm <- function(Y,
     
     ###Initialize mean
     MMM <- alpha0 + beta0 * X + 
-        L %*% gamma + 
-        M %*% delta + 
         alpha_time[time.id] + 
         beta_time[time.id] * X + 
         alpha_space[Z_ID] + 
         beta_space[Z_ID] * X
+    if (!is.null(L)) {
+        MMM <- MMM + L %*% gamma
+    }
+    if (!is.null(M)) {
+        MMM <- MMM + M %*% delta
+    }
     
     ###Initializae sigma2
     sigma2 <- stats::var(as.numeric(Y - MMM), na.rm = T)
@@ -473,11 +477,17 @@ grm <- function(Y,
     alpha0.save <- rep(NA, K)
     beta0.save <- rep(NA, K)
     
-    gamma.save <- matrix(NA, nrow = K, ncol = length(gamma))
-    delta.save <- matrix(NA, nrow = K, ncol = length(delta))
+    gamma.save <- NULL
+    if (!is.null(L)) {
+        gamma.save <- matrix(NA, nrow = K, ncol = length(gamma))
+        lambda_gamma.save <- rep(NA, K)
+    }
+    delta.save <- NULL
+    if (!is.null(M)) {
+        delta.save <- matrix(NA, nrow = K, ncol = length(delta))
+        lambda_delta.save <- rep(NA, K)
+    }
     
-    lambda_gamma.save <- rep(NA, K)
-    lambda_delta.save <- rep(NA, K)
     
     alpha_time.save <- matrix(NA, nrow = K, ncol = N.time)
     beta_time.save <- matrix(NA, nrow = K, ncol = N.time)
@@ -1504,12 +1514,12 @@ grm <- function(Y,
 
                 } else if (!is.null(discrete.theta.beta.values)) {
 
-                    kern_curr = dnngpkernsbeta$kernals_beta[[dthetabeta$which_theta_curr_beta]]
-                    kern_inv_curr = dnngpkernsbeta$kernals_inv_beta[[dthetabeta$which_theta_curr_beta]]
-                    kern_partial_inv_curr = dnngpkernsbeta$kernals_partial_inv_beta[[dthetabeta$which_theta_curr_beta]]
-                    MMM = MMM - beta_space[Z_ID] * X
-                    RRR = Y - MMM
-                    XXX = 1 / sigma2 * t(Gamma_space) %*% (X * RRR)
+                    kern_curr <- dnngpkernsbeta$kernals_beta[[dthetabeta$which_theta_curr_beta]]
+                    kern_inv_curr <- dnngpkernsbeta$kernals_inv_beta[[dthetabeta$which_theta_curr_beta]]
+                    kern_partial_inv_curr <- dnngpkernsbeta$kernals_partial_inv_beta[[dthetabeta$which_theta_curr_beta]]
+                    MMM <- MMM - beta_space[Z_ID] * X
+                    RRR <- Y - MMM
+                    XXX <- 1 / sigma2 * t(Gamma_space) %*% (X * RRR)
 
                     beta_space <- rep(0, N.space * N.spacetime)
 
@@ -1534,8 +1544,8 @@ grm <- function(Y,
                             j_and_neighbors <- c(j, neighbors[[j]])
                             dist_space_mat_j <- dist_matrices[[j]]
                             SSS_j <- tau_beta * kern_curr[[j]]
-                            VVV_j = diag(1 / sigma2 * X_S_st_ord[j_and_neighbors]) + (1 / tau_beta) * kern_inv_curr[[j]]
-                            joint_cov = solve(VVV_j)
+                            VVV_j <- diag(1 / sigma2 * X_S_st_ord[j_and_neighbors]) + (1 / tau_beta) * kern_inv_curr[[j]]
+                            joint_cov <- solve(VVV_j)
                             joint_mean <- joint_cov %*% XXX_st_ord[j_and_neighbors]
                             sigma_12_inv_sigma_22 <- joint_cov[1, -1] %*% solve(joint_cov[-1, -1])
                             cond_mean <- joint_mean[1] - 
@@ -1552,11 +1562,11 @@ grm <- function(Y,
                         beta_space[space_to_spacetime_assign == st] <- beta_space_st
                     }
 
-                    MMM = MMM + beta_space[Z_ID] * X
+                    MMM <- MMM + beta_space[Z_ID] * X
 
 
                     #Update tau_beta
-                    tau_prop = stats::rlnorm(1, 
+                    tau_prop <- stats::rlnorm(1, 
                                              log(tau_beta),
                                              tau.beta.tune)
                     lik_prop <- 0
@@ -1585,7 +1595,7 @@ grm <- function(Y,
                     }
 
 
-                    ratio = lik_prop + 
+                    ratio <- lik_prop + 
                         stats::dgamma(tau_prop, 
                                       tau.beta.a, 
                                       tau.beta.b, 
@@ -1599,8 +1609,8 @@ grm <- function(Y,
                         log(tau_beta)
 
                     if (log(stats::runif(1)) < ratio) {
-                        tau_beta = tau_prop
-                        tau.acc[2] = tau.acc[2] + 1
+                        tau_beta <- tau_prop
+                        tau.acc[2] <- tau.acc[2] + 1
                     }
 
                     #Update theta_beta
@@ -1612,9 +1622,9 @@ grm <- function(Y,
 
                         theta_beta_prop <- discrete.theta.beta.values[[which_theta_prop_beta]]
 
-                        kern_prop = dnngpkernsbeta$kernals_beta[[which_theta_prop_beta]]
-                        kern_inv_prop = dnngpkernsalpha$kernals_inv_alpha[[which_theta_prop_beta]]
-                        kern_partial_inv_prop = dnngpkernsbeta$kernals_partial_inv_beta[[which_theta_prop_beta]]
+                        kern_prop <- dnngpkernsbeta$kernals_beta[[which_theta_prop_beta]]
+                        kern_inv_prop <- dnngpkernsalpha$kernals_inv_alpha[[which_theta_prop_beta]]
+                        kern_partial_inv_prop <- dnngpkernsbeta$kernals_partial_inv_beta[[which_theta_prop_beta]]
 
                         lik_prop <- 0
                         lik_cur <- 0
@@ -1641,7 +1651,7 @@ grm <- function(Y,
                                                          log = T))
                         }
 
-                        ratio = lik_prop + 
+                        ratio <- lik_prop + 
                             stats::dgamma(theta_beta_prop, 
                                           theta.beta.a, 
                                           theta.beta.b, 
@@ -1656,18 +1666,18 @@ grm <- function(Y,
 
                         if (log(stats::runif(1)) < ratio) {
                             dthetabeta$which_theta_curr_beta <- which_theta_prop_beta
-                            theta_beta = theta_beta_prop
-                            theta.acc[1] = theta.acc[1] + 1
+                            theta_beta <- theta_beta_prop
+                            theta.acc[1] <- theta.acc[1] + 1
                         }
 
 
                     } else if (discrete.theta.gibbs) {
                         
 
-                        lik = rep(0, length(discrete.theta.beta.values))
+                        lik <- rep(0, length(discrete.theta.beta.values))
 
                         for (st in unique(spacetime.id)) {
-                            beta_space_st = beta_space[space_to_spacetime_assign == st]
+                            beta_space_st <- beta_space[space_to_spacetime_assign == st]
                             lik <- lik + mapply(function(x, y) {
                                                     sum(dnngp_discrete_theta(y = beta_space_st,
                                                                              ordered_coords = nngp_utils$ordered_coords,
@@ -1699,87 +1709,93 @@ grm <- function(Y,
       
         #Update temporal intercepts and its parameters
         if (include.additive.weekly.resid) {
-            MMM = MMM - alpha_time[time.id]
-            RRR = Y - MMM
-            XXX = 1 / sigma2 * t(Gamma_time) %*% RRR
-            VVV = diag(1 / sigma2 * GtG_time) + 1 / omega_alpha * (Q - rho_alpha * A)
-            VVV = solve(VVV)
-            alpha_time = mvnfast::rmvn(1, VVV %*% XXX, VVV)[1,]
-            MMM = MMM + alpha_time[time.id]
+            MMM <- MMM - alpha_time[time.id]
+            RRR <- Y - MMM
+            XXX <- 1 / sigma2 * t(Gamma_time) %*% RRR
+            VVV <- diag(1 / sigma2 * GtG_time) + 1 / omega_alpha * (Q - rho_alpha * A)
+            VVV <- solve(VVV)
+            alpha_time <- mvnfast::rmvn(1, VVV %*% XXX, VVV)[1,]
+            MMM <- MMM + alpha_time[time.id]
       
             #Update omega_alpha
-            SS1 = alpha_time %*% Q %*% alpha_time
-            SS2 = alpha_time %*% A %*% alpha_time
-            omega_alpha = 1 / stats::rgamma(1, N.time / 2 + omega.a, (SS1 - rho_alpha * SS2) / 2 + omega.b)
+            SS1 <- alpha_time %*% Q %*% alpha_time
+            SS2 <- alpha_time %*% A %*% alpha_time
+            omega_alpha <- 1 / stats::rgamma(1, N.time / 2 + omega.a, (SS1 - rho_alpha * SS2) / 2 + omega.b)
             
             #Update rho_alpha
-            R = detpart + 0.5 * omega_alpha * canrho * c(SS2)
-            rho_alpha = sample(canrho, 1, prob = exp(R - max(R)))
+            R <- detpart + 0.5 * omega_alpha * canrho * c(SS2)
+            rho_alpha <- sample(canrho, 1, prob = exp(R - max(R)))
         }
 
         #Update temporal AOD coefficients
         if (include.multiplicative.weekly.resid) {
-            MMM = MMM - beta_time[time.id] * X
-            RRR = Y - MMM
-            XXX = 1 / sigma2 * t(Gamma_time) %*% (X * RRR)
-            VVV = diag(1 / sigma2 * X_W) + 1 / omega_beta * (Q - rho_beta * A)
-            VVV = solve(VVV)
-            beta_time = mvnfast::rmvn(1, VVV %*% XXX, VVV)[1,]
-            MMM = MMM + beta_time[time.id] * X
+            MMM <- MMM - beta_time[time.id] * X
+            RRR <- Y - MMM
+            XXX <- 1 / sigma2 * t(Gamma_time) %*% (X * RRR)
+            VVV <- diag(1 / sigma2 * X_W) + 1 / omega_beta * (Q - rho_beta * A)
+            VVV <- solve(VVV)
+            beta_time <- mvnfast::rmvn(1, VVV %*% XXX, VVV)[1,]
+            MMM <- MMM + beta_time[time.id] * X
         
             #Update omega_beta
-            SS1 = beta_time %*% Q %*% beta_time
-            SS2 = beta_time %*% A %*% beta_time
-            omega_beta = 1 / stats::rgamma(1, N.time / 2 + omega.a, (SS1 - rho_beta * SS2) / 2 + omega.b)
+            SS1 <- beta_time %*% Q %*% beta_time
+            SS2 <- beta_time %*% A %*% beta_time
+            omega_beta <- 1 / stats::rgamma(1, N.time / 2 + omega.a, (SS1 - rho_beta * SS2) / 2 + omega.b)
             
             #Update rho_beta
-            R = detpart + 0.5 * omega_beta * canrho * c(SS2)
-            rho_beta = sample(canrho, 1, prob = exp(R - max(R)))
+            R <- detpart + 0.5 * omega_beta * canrho * c(SS2)
+            rho_beta <- sample(canrho, 1, prob = exp(R - max(R)))
         }
     
      
         ###Save Samples 
      
         if (i > burn & ((i - burn) %% thin == 0)) {
-            k = (i - burn) / thin
+            k <- (i - burn) / thin
 
             #Save statistics
-            LL.save[k] = sum(-2 * stats::dnorm(Y, MMM, sqrt(sigma2), log = T))
+            LL.save[k] <- sum(-2 * stats::dnorm(Y, MMM, sqrt(sigma2), log = T))
   
-            alpha0.save[k] = alpha0
-            beta0.save[k] = beta0
-            gamma.save[k, ] = gamma
-            delta.save[k, ] = delta
+            alpha0.save[k] <- alpha0
+            beta0.save[k] <- beta0
+
+            if (!is.null(L)) {
+                gamma.save[k, ] <- gamma
+                lambda_gamma.save[k] <- lambda_gamma
+            }
+
+            if (!is.null(M)) {
+                delta.save[k, ] <- delta
+                lambda_delta.save[k] <- lambda_delta
+            }
        
-            lambda_gamma.save[k] = lambda_gamma
-            lambda_delta.save[k] = lambda_delta
        
-            alpha_time.save[k,] = alpha_time
-            beta_time.save[k,] = beta_time
+            alpha_time.save[k,] <- alpha_time
+            beta_time.save[k,] <- beta_time
        
-            alpha_space.save[k,] = alpha_space
-            beta_space.save[k,] = beta_space
+            alpha_space.save[k,] <- alpha_space
+            beta_space.save[k,] <- beta_space
        
-            sigma2.save[k] = sigma2
-            theta_alpha.save[k] = theta_alpha
-            theta_beta.save[k] = theta_beta
-            rho_alpha.save[k] = rho_alpha
-            rho_beta.save[k] = rho_beta
+            sigma2.save[k] <- sigma2
+            theta_alpha.save[k] <- theta_alpha
+            theta_beta.save[k] <- theta_beta
+            rho_alpha.save[k] <- rho_alpha
+            rho_beta.save[k] <- rho_beta
        
-            omega_alpha.save[k] = omega_alpha
-            omega_beta.save[k] = omega_beta
-            tau_alpha.save[k] = tau_alpha
-            tau_beta.save[k] = tau_beta
+            omega_alpha.save[k] <- omega_alpha
+            omega_beta.save[k] <- omega_beta
+            tau_alpha.save[k] <- tau_alpha
+            tau_beta.save[k] <- tau_beta
        
             if (!is.null(discrete.theta.alpha.values)) {
-                which.theta.alpha.discrete[k] = dthetaalpha$which_theta_curr_alpha
+                which.theta.alpha.discrete[k] <- dthetaalpha$which_theta_curr_alpha
             }
 
             if (!is.null(discrete.theta.beta.values)) {
-                which.theta.beta.discrete[k] = dthetabeta$which_theta_curr_beta
+                which.theta.beta.discrete[k] <- dthetabeta$which_theta_curr_beta
             }
 
-            Y.hat = Y.hat + MMM / K
+            Y.hat <- Y.hat + MMM / K
 
         }
 
@@ -1790,39 +1806,41 @@ grm <- function(Y,
     }
 
     ##Process for output
-    delta.save = data.frame(delta.save)
-    names(delta.save) = colnames(M)
-    gamma.save = data.frame(gamma.save);
-    names(gamma.save) = colnames(L)
+    if (!is.null(L)) {
+        gamma.save <- data.frame(gamma.save)
+        names(gamma.save) <- colnames(L)
+    }
+    if (!is.null(M)) {
+        delta.save <- data.frame(delta.save) # 
+        names(delta.save) <- colnames(M)
+    }
     
-    alpha_time.save = data.frame(time.id = 1:N.time, t(alpha_time.save))
-    names(alpha_time.save) = c("time.id", 
+    alpha_time.save <- data.frame(time.id = 1:N.time, t(alpha_time.save))
+    names(alpha_time.save) <- c("time.id", 
                                paste0("Sample", 1:K)) 
-    row.names(alpha_time.save) = NULL
-    beta_time.save = data.frame(time.id = 1:N.time, 
+    row.names(alpha_time.save) <- NULL
+    beta_time.save <- data.frame(time.id = 1:N.time, 
                                 t(beta_time.save))
-    names(beta_time.save) = c("time.id", 
+    names(beta_time.save) <- c("time.id", 
                               paste0("Sample", 1:K)) 
-    row.names(alpha_time.save) = NULL
+    row.names(alpha_time.save) <- NULL
     
     alpha_space.save = data.frame(space.id = rep(1:N.space, N.spacetime),
                                   spacetime.id = rep(1:N.spacetime, each = N.space),  
                                   t(alpha_space.save))
-    names(alpha_space.save) = c("space.id", 
+    names(alpha_space.save) <- c("space.id", 
                                 "spacetime.id", 
                                 paste0("Sample", 1:K)) 
-    row.names(alpha_space.save) = NULL
+    row.names(alpha_space.save) <- NULL
     beta_space.save = data.frame(space.id = rep(1:N.space, N.spacetime),
                                  spacetime.id = rep(1:N.spacetime, each = N.space),  
                                 t(beta_space.save))
-    names(beta_space.save) = c("space.id", "spacetime.id", paste0("Sample", 1:K))
-    row.names(beta_space.save) = NULL
+    names(beta_space.save) <- c("space.id", "spacetime.id", paste0("Sample", 1:K))
+    row.names(beta_space.save) <- NULL
     
     other.save = data.frame(alpha0 = alpha0.save, 
                             beta0 = beta0.save,
                             sigma2 = sigma2.save,
-                            lambda.delta = lambda_delta.save, 
-                            lambda.gamma = lambda_gamma.save,
                             theta.alpha = theta_alpha.save, 
                             theta.beta = theta_beta.save, 
                             tau.alpha = tau_alpha.save, 
@@ -1832,20 +1850,33 @@ grm <- function(Y,
                             omega.alpha = omega_alpha.save, 
                             omega.beta = omega_beta.save,
                             dev = LL.save)
+    if (!is.null(L)) {
+        other.save$lambda.gamma <- lambda_gamma.save
+    }
+    if (!is.null(M)) {
+        other.save$lambda.delta <- lambda_delta.save
+    }   
     
-    standardize.param = rbind(data.frame(Type = "X", 
+    standardize.param <- rbind(data.frame(Type = "X", 
                                          Name = "AOD/CTM", 
                                          Mean = X.mean, 
-                                         SD = X.sd),
-                               data.frame(Type = "L", 
-                                          Name = colnames(L), 
-                                          Mean = L.mean, 
-                                          SD = L.sd), 
-                               data.frame(Type = "M", 
-                                          Name = colnames(M), 
-                                          Mean = M.mean, 
-                                          SD = M.sd))
-    row.names(standardize.param) = NULL
+                                         SD = X.sd))
+    if (!is.null(L)) {
+        standardize.param <- rbind(standardize.param, 
+                                  data.frame(Type = "L", 
+                                             Name = colnames(L), 
+                                             Mean = L.mean, 
+                                             SD = L.sd))
+    }
+    if (!is.null(M)) {
+        standardize.param <- rbind(standardize.param, 
+                                  data.frame(Type = "M", 
+                                             Name = colnames(M), 
+                                             Mean = M.mean, 
+                                             SD = M.sd))
+    }
+
+    row.names(standardize.param) <- NULL
 
     nngp.info.save <- NULL
     if (nngp) {
