@@ -179,7 +179,8 @@ grm_pred <- function(grm.fit,
             }
              
             #For betas's
-            if (include.multiplicative.annual.resid) { if (verbose == TRUE) {
+            if (include.multiplicative.annual.resid) { 
+                if (verbose == TRUE) {
                     cat("Imputing Spatial Betas\n") 
                 }
 
