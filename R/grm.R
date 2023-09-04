@@ -512,10 +512,12 @@ grm <- function(Y,
 
     if (!is.null(discrete.theta.alpha.values)) {
         which.theta.alpha.discrete <- rep(0, K)
+        theta_alpha <- stats::median(discrete.theta.alpha.values)
     }
 
     if (!is.null(discrete.theta.beta.values)) {
         which.theta.beta.discrete <- rep(0, K)
+        theta_beta <- stats::median(discrete.theta.beta.values)
     }
     
     
