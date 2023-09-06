@@ -37,7 +37,7 @@ ctm_fit <- grm(Y = ctm_pm25$pm25,
                n.iter = 100,
                burn = 20,
                thin = 1,
-               nngp = T,
+               discrete.theta.gibbs = T,
                covariance = "matern",
                matern.nu = 0.5,
                coords = ctm_pm25[, c("x", "y")],
@@ -45,6 +45,9 @@ ctm_fit <- grm(Y = ctm_pm25$pm25,
                time.id = ctm_pm25$time_id,
                spacetime.id = ctm_pm25$spacetime_id,
                verbose.iter = 10)
+
+plot(ctm_fit$others$theta.alpha, type = "l")
+plot(ctm_fit$others$theta.beta, type = "l")
 
 
 
@@ -84,7 +87,6 @@ maia_fit <- grm(Y = maia_pm25$pm25,
                 M = maia_pm25[, c("tmp", "wind", "cmaq", "tempaod", 
                                   "windaod", "elevationaod")],
                 n.iter = 500,
-                nngp = T,
                 num_neighbors = 6,
                 burn = 100,
                 thin = 4,

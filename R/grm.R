@@ -905,14 +905,15 @@ grm <- function(Y,
 
                         for (st in unique(spacetime.id)) {
                             alpha_space_st <- alpha_space[space_to_spacetime_assign == st]
-                            lik <- lik + mapply(function(x, y) {
+                            alpha_space_st <- alpha_space_st[nngp_utils$coord_ordering]
+                            lik <- lik + mapply(function(x_test, y_test) {
                                                     sum(dnngp_discrete_theta(y = alpha_space_st,
                                                                              ordered_coords = nngp_utils$ordered_coords,
                                                                              neighbors = neighbors,
                                                                              dist_matrices = dist_matrices,
                                                                              phi = tau_alpha,
-                                                                             kerns = x,
-                                                                             kerns_partial_inv = y,
+                                                                             kerns = x_test,
+                                                                             kerns_partial_inv = y_test,
                                                                              log = T))},
                                                 dnngpkernsalpha$kernals_alpha,
                                                 dnngpkernsalpha$kernals_partial_inv_alpha)
