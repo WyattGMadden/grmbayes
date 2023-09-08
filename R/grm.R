@@ -1681,6 +1681,7 @@ grm <- function(Y,
 
                         for (st in unique(spacetime.id)) {
                             beta_space_st <- beta_space[space_to_spacetime_assign == st]
+                            beta_space_st <- beta_space_st[nngp_utils$coord_ordering]
                             lik <- lik + mapply(function(x, y) {
                                                     sum(dnngp_discrete_theta(y = beta_space_st,
                                                                              ordered_coords = nngp_utils$ordered_coords,
