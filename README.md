@@ -8,8 +8,8 @@
 [![R-CMD-check](https://github.com/WyattGMadden/ensembleDownscaleR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/WyattGMadden/ensembleDownscaleR/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-The goal of grm is to provide functions for fitting efficient Bayesian
-geostatistical regression models.
+The goal of ‘grmbayes’ is to provide functions for fitting efficient
+Bayesian geostatistical regression models.
 
 ## Installation
 
@@ -37,18 +37,14 @@ ctm_fit <- grm(Y = ctm_pm25$pm25,
                n.iter = 100,
                burn = 20,
                thin = 1,
-               discrete.theta.gibbs = T,
+               nngp = T,
                covariance = "matern",
-               matern.nu = 0.5,
+               matern.nu = 1.5,
                coords = ctm_pm25[, c("x", "y")],
                space.id = ctm_pm25$space_id,
                time.id = ctm_pm25$time_id,
                spacetime.id = ctm_pm25$spacetime_id,
                verbose.iter = 10)
-
-plot(ctm_fit$others$theta.alpha, type = "l")
-plot(ctm_fit$others$theta.beta, type = "l")
-
 
 
 cv_id_ctm_ord <- create_cv(space.id = ctm_pm25$space_id,
