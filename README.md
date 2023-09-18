@@ -8,7 +8,7 @@
 [![R-CMD-check](https://github.com/WyattGMadden/ensembleDownscaleR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/WyattGMadden/ensembleDownscaleR/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-The goal of ‘grmbayes’ is to provide functions for fitting efficient
+The goal of `grmbayes` is to provide functions for fitting efficient
 Bayesian geostatistical regression models.
 
 ## Installation
