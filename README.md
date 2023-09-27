@@ -16,7 +16,7 @@ Bayesian geostatistical regression models.
 You can install the development version of ensembleDownscaleR like so:
 
 ``` r
-devtools::install_github("WyattGMadden/grmbayes")
+devtools::install_github("WyattGMadden/grmbayes", build_vignettes = TRUE)
 ```
 
 ## Example
