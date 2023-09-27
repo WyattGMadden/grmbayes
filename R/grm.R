@@ -1,7 +1,7 @@
 
 #' Fit the Geostatistical Regression Model (GRM)
 #'
-#' This function fits Bayesian Hierarchical Model (BHM) in the form of Y ~ beta X + gamma L + delta M
+#' This function fits Bayesian Hierarchical Model (BHM) in the form of Y ~ alpha(s, t) + beta(s, t) X + gamma L + delta M
 #'
 #' @param Y Dependent variable vector (n)
 #' @param X Unstandardized primary independent variable vector (n)
@@ -11,10 +11,10 @@
 #' @param space.id Spatial location ID vector (n)
 #' @param time.id Temporal location ID vector (n)
 #' @param spacetime.id ID vector of time points where spatial trends vary (n)
-#' @param include.additive.weekly.resid Include additive temporal (weekly) residual bias not explained by other inputes
-#' @param include.additive.annual.resid Include additive spatial (annual) residual bias not explained by other inputes
-#' @param include.multiplicative.weekly.resid Include multiplicative temporal (weekly) residual bias not explained by other inputes
-#' @param include.multiplicative.annual.resid Include multiplicative spatial (weekly) residual bias not explained by other inputes
+#' @param incl.add.temp.eff Include additive temporal effects
+#' @param incl.add.spat.eff Include additive spatial effects
+#' @param incl.mult.temp.eff Include multiplicative temporal effects
+#' @param incl.mult.spat.eff Include multiplicative spatial effects
 #' @param nngp Use nearest neighbor Gaussian process (NNGP) in place of Gaussian process
 #' @param num_neighbors Number of nearest neighbors to use in NNGP
 #' @param discrete.theta.alpha.values Values of theta (GP intercept range parameter) to use in discrete uniform prior. If NULL (default) continuous theta prior is used
@@ -64,10 +64,10 @@ grm <- function(Y,
                space.id, 
                time.id, 
                spacetime.id,
-               include.additive.weekly.resid = T,
-               include.additive.annual.resid = T,
-               include.multiplicative.weekly.resid = T,
-               include.multiplicative.annual.resid = T,
+               incl.add.temp.eff = T,
+               incl.add.spat.eff = T,
+               incl.mult.temp.eff = T,
+               incl.mult.spat.eff = T,
                nngp = F,
                num_neighbors = 10,
                discrete.theta.alpha.values = NULL,
@@ -412,7 +412,7 @@ grm <- function(Y,
     ###Initialize alpha_time and its CAR variance omega_alpha
     alpha_time <- rep(0, N.time)
     omega_alpha <- 0
-    if (include.additive.weekly.resid) { 
+    if (incl.add.temp.eff) { 
         alpha_time <- (1 / GtG_time) * t(Gamma_time) %*% (Y - mu)
         omega_alpha <- as.numeric(stats::var(alpha_time, na.rm = T))
     }
@@ -420,7 +420,7 @@ grm <- function(Y,
     ###Initialize beta_time and its CAR variance omega_beta
     beta_time <- rep(0, N.time)
     omega_beta <- 0
-    if (include.multiplicative.weekly.resid) { 
+    if (incl.mult.temp.eff) { 
         RRR <- Y - mu - alpha_time[time.id]
         beta_time <-  1 / X_W * t(Gamma_time) %*% (X * RRR)
         omega_beta <- as.numeric(stats::var(beta_time, na.rm = T))
@@ -429,7 +429,7 @@ grm <- function(Y,
     ###Initialize alpha_spacetime and its spatial variance tau_alpha
     alpha_space <- rep(0, N.spacetime * N.space)
     tau_alpha <- 0
-    if (include.additive.annual.resid) {
+    if (incl.add.spat.eff) {
         RRR <- Y - mu - alpha_time[time.id] - beta_time[time.id] * X
         alpha_space <- as.numeric((1 / GtG_space) * t(Gamma_space) %*% RRR)
         tau_alpha <- as.numeric(stats::var(alpha_space, na.rm = T))
@@ -438,7 +438,7 @@ grm <- function(Y,
     ###Initialize beta_spacetime and its spatial variance tau_beta
     beta_space <- rep(0, N.spacetime * N.space)
     tau_beta <- 0
-    if (include.multiplicative.annual.resid) {
+    if (incl.mult.spat.eff) {
         RRR <- Y - mu - alpha_time[time.id] - beta_time[time.id] * X - alpha_space[Z_ID]
         beta_space <- as.numeric(1 / X_S * t(Gamma_space) %*% (X * RRR))
         tau_beta <- as.numeric(stats::var(beta_space, na.rm = T))
@@ -584,7 +584,7 @@ grm <- function(Y,
        
 
         #Update spatial intercepts and parameters if NNGP
-        if (include.additive.annual.resid) {
+        if (incl.add.spat.eff) {
 
             if (nngp) {
 
@@ -1148,7 +1148,7 @@ grm <- function(Y,
 
       
         #Update spatial coefficent for AOD if GP
-        if (include.multiplicative.annual.resid) {
+        if (incl.mult.spat.eff) {
 
             if (!nngp) {
 
@@ -1712,7 +1712,7 @@ grm <- function(Y,
         }
       
         #Update temporal intercepts and its parameters
-        if (include.additive.weekly.resid) {
+        if (incl.add.temp.eff) {
             MMM <- MMM - alpha_time[time.id]
             RRR <- Y - MMM
             XXX <- 1 / sigma2 * t(Gamma_time) %*% RRR
@@ -1732,7 +1732,7 @@ grm <- function(Y,
         }
 
         #Update temporal AOD coefficients
-        if (include.multiplicative.weekly.resid) {
+        if (incl.mult.temp.eff) {
             MMM <- MMM - beta_time[time.id] * X
             RRR <- Y - MMM
             XXX <- 1 / sigma2 * t(Gamma_time) %*% (X * RRR)

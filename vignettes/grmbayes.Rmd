@@ -1,0 +1,167 @@
+---
+title: "grmbayes"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{grmbayes}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(grmbayes)
+```
+
+# Introduction
+
+`grmbayes` provides a suite of functions to fit Bayesian geostatistical regression models, originally designed for use with air quality data. 
+
+There are three primary functions in the package:
+- `grm`: fits a Bayesian geostatistical regression model using MCMC
+- `grm_cv`: fits a Bayesian geostatistical regression model using MCMC with cross-validation
+- `grm_pred`: predicts values at new locations using a fitted Bayesian geostatistical regression model 
+
+Examples of each of these functions are provided in this vignette using a dataset of $PM_{2.5}$ and Chemical Transport Model (CTM) readings collected in the Atlanta Metropolin Area from 2003 to 2005. Run `?cmaq_aqs_matched` for more info. 
+A dataset of $PM_{2.5}$ and satellite-collected Aerosol Optical Depth (AOD) over the same area is also included in this package (`modis_aqs_matched`) but is not used in this vignette.
+
+
+# grm
+
+`grm()` fits a Bayesian geostatistical regression model using MCMC, detailed as follows:
+
+\[
+Y(s,t) = \alpha(s, t) + \beta(s, t) X(s, t) + \gamma L + \delta M + \epsilon(s, t) \\
+\]
+where
+\[
+        \alpha(s, t) = \alpha(s) + \alpha(t) \\
+        \beta(s, t) = \beta(s) + \beta(t) 
+\]
+
+The model is specified in `grmbayes` using the following arguments:
+- `Y`: a vector of response values (e.g., $PM_{2.5}$)
+- `X`: a vector of primary covariate values (e.g., CTM)
+- `L`: a data frame or matrix of secondary temporal covariate values (e.g., elevation, forest cover, etc.)
+- `M`: a data frame or matrix of secondary spatio-temporal covariate values (e.g., temperature, wind speed, etc.)
+- `coords`: a data frame or matrix of spatial coordinates, named `x` and `y`
+
+`space.id`, `time.id`, and `spacetime.id` are also required to specify the model. 
+These are vectors of unique identifiers for each location, time, and spatio-temporal combination, respectively. 
+The unique identifiers must be integers starting at 1 and increasing by 1 for each additional location, time, or spatio-temporal combination
+
+
+The following code provides a basic model fit:
+
+```{r, eval = FALSE}
+cmaq_fit <- grm(Y = cmaq_aqs_matched$pm25,
+                X = cmaq_aqs_matched$ctm,
+                L = cmaq_aqs_matched[, c("elevation", "forestcover",
+                                 "hwy_length", "lim_hwy_length", 
+                                 "local_rd_length", "point_emi_any")],
+                M = cmaq_aqs_matched[, c("tmp", "wind")],
+                coords = cmaq_aqs_matched[, c("x", "y")],
+                space.id = cmaq_aqs_matched$space_id,
+                time.id = cmaq_aqs_matched$time_id,
+                spacetime.id = cmaq_aqs_matched$spacetime_id)
+```
+
+Output of `grm()` contains posterior draws of all fixed/random effects and model specification information. 
+
+## Additive/Multiplicative Temporal/Spatial Effects
+
+The user can specify whether the temporal and spatial random effects are additive or multiplicative using the `incl.add.temp.eff`, `incl.mult.temp.eff`, `incl.add.spat.eff` and `incl.mult.spat.eff` arguments.
+
+For example, 
+
+\[
+Y(s,t) = \alpha(s, t) + \beta(s, t) X(s, t) + \gamma L + \delta M + \epsilon(s, t) \\
+\]
+where
+\[
+        \alpha(s, t) = \alpha(t) \\
+        \beta(s, t) = \beta(s) 
+\]
+
+corresponds with 
+
+```{r, eval = FALSE}
+cmaq_fit <- grm(Y = cmaq_aqs_matched$pm25,
+                X = cmaq_aqs_matched$ctm,
+                L = cmaq_aqs_matched[, c("elevation", "forestcover",
+                                 "hwy_length", "lim_hwy_length", 
+                                 "local_rd_length", "point_emi_any")],
+                M = cmaq_aqs_matched[, c("tmp", "wind")],
+                coords = cmaq_aqs_matched[, c("x", "y")],
+                space.id = cmaq_aqs_matched$space_id,
+                time.id = cmaq_aqs_matched$time_id,
+                spacetime.id = cmaq_aqs_matched$spacetime_id,
+                incl.add.spat.eff = F,
+                incl.add.temp.eff = T,
+                incl.mult.spat.eff = T,
+                incl.mult.temp.eff = F)
+```
+
+and 
+
+\[
+Y(s,t) = \alpha(s, t) + \beta(s, t) X(s, t) + \gamma L + \delta M + \epsilon(s, t) \\
+\]
+where
+\[
+        \alpha(s, t) = \alpha(t) \\
+        \beta(s, t) = \beta(s) + \beta(t)
+\]
+
+corresponds with 
+
+```{r, eval = FALSE}
+cmaq_fit <- grm(Y = cmaq_aqs_matched$pm25,
+                X = cmaq_aqs_matched$ctm,
+                L = cmaq_aqs_matched[, c("elevation", "forestcover",
+                                 "hwy_length", "lim_hwy_length", 
+                                 "local_rd_length", "point_emi_any")],
+                M = cmaq_aqs_matched[, c("tmp", "wind")],
+                coords = cmaq_aqs_matched[, c("x", "y")],
+                space.id = cmaq_aqs_matched$space_id,
+                time.id = cmaq_aqs_matched$time_id,
+                spacetime.id = cmaq_aqs_matched$spacetime_id,
+                incl.add.spat.eff = F,
+                incl.add.temp.eff = T,
+                incl.mult.spat.eff = T,
+                incl.mult.temp.eff = T)
+```
+
+## Spatial Processes
+
+Nearest Neighbor Gaussian Processes (NNGP) can provide computational efficiency when there are many spatial locations. 
+Choose either a Gaussian Process or Nearest Neighbor Gaussian Process for the spatial random effects using `nngp` argument. 
+If `nngp = T`, one can also select number of neighbors (`num_neighbors`). 
+
+```{r, eval = FALSE}
+cmaq_fit <- grm(Y = cmaq_aqs_matched$pm25,
+                X = cmaq_aqs_matched$ctm,
+                L = cmaq_aqs_matched[, c("elevation", "forestcover",
+                                 "hwy_length", "lim_hwy_length", 
+                                 "local_rd_length", "point_emi_any")],
+                M = cmaq_aqs_matched[, c("tmp", "wind")],
+                coords = cmaq_aqs_matched[, c("x", "y")],
+                space.id = cmaq_aqs_matched$space_id,
+                time.id = cmaq_aqs_matched$time_id,
+                spacetime.id = cmaq_aqs_matched$spacetime_id,
+                incl.add.spat.eff = F,
+                incl.add.temp.eff = T,
+                incl.mult.spat.eff = T,
+                incl.mult.temp.eff = F,
+                nngp = T,
+                num_neighbors = 10)
+```
+
+
+
+

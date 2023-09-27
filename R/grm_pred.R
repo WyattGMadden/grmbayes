@@ -31,8 +31,8 @@ grm_pred <- function(grm.fit,
                     space.id, 
                     time.id, 
                     spacetime.id, 
-                    include.additive.annual.resid = T,
-                    include.multiplicative.annual.resid = T,
+                    incl.add.spat.eff = T,
+                    incl.mult.spat.eff = T,
                     n.iter = 500,
                     verbose = TRUE,
                     in.sample = FALSE) {
@@ -136,7 +136,7 @@ grm_pred <- function(grm.fit,
 
             
             #For alpha's
-            if (include.additive.annual.resid) {
+            if (incl.add.spat.eff) {
 
               if (verbose == TRUE) {
 
@@ -179,7 +179,7 @@ grm_pred <- function(grm.fit,
             }
              
             #For betas's
-            if (include.multiplicative.annual.resid) { 
+            if (incl.mult.spat.eff) { 
                 if (verbose == TRUE) {
                     cat("Imputing Spatial Betas\n") 
                 }
@@ -260,7 +260,7 @@ grm_pred <- function(grm.fit,
             beta_space_pred[paste0("Sample", 1:n.iter)] <- 0
             
             #For alpha's
-            if (include.additive.annual.resid) {
+            if (incl.add.spat.eff) {
 
               if (verbose == TRUE) {
 
@@ -312,7 +312,7 @@ grm_pred <- function(grm.fit,
             }
              
             #For betas's
-            if (include.multiplicative.annual.resid) { 
+            if (incl.mult.spat.eff) { 
 
                 if (verbose == TRUE) {
                     cat("Imputing Spatial Betas\n") 
