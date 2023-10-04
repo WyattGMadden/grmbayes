@@ -20,7 +20,7 @@ create_cv(
 
 \item{num.folds}{Number of folds used in the cross validation process (default = 10)}
 
-\item{type}{Type of cross validation to be performed. Options are "spatial", "ordinary", or "spatial_clustered". (default = "spatial")}
+\item{type}{Type of cross validation to be performed. Options are "spatial", "ordinary", "spatial_clustered", or "spatial_buffered". (default = "spatial")}
 
 \item{coords}{Matrix of x y coordinates, with colnames(coords) == c("x", "y"), (n, 2)}
 
