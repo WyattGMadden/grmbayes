@@ -131,8 +131,6 @@ cmaq_full <- grm_pred(grm.fit = cmaq_fit,
                       space.id = cmaq_full$space_id,
                       time.id = cmaq_full$time_id,
                       spacetime.id = cmaq_full$spacetime_id,
-                      include.additive.annual.resid = T,
-                      include.multiplicative.annual.resid = T,
                       n.iter = 20,
                       verbose = T)
 
@@ -153,8 +151,6 @@ modis_full <- grm_pred(grm.fit = modis_fit,
                        space.id = modis_full$space_id, 
                        time.id = modis_full$time_id, 
                        spacetime.id = modis_full$spacetime_id,
-                       include.additive.annual.resid = T,
-                       include.multiplicative.annual.resid = T,
                        n.iter = 100,
                        verbose = T)
 ```
