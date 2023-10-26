@@ -574,7 +574,7 @@ grm <- function(Y,
         
             ##Update lambda_delta
             lambda_delta <- 1 / stats::rgamma(1, 
-                                             length(delta) / 2 + sigma.a, 
+                                             length(delta) / 2 + sigma.a,
                                              sum(delta ^ 2) / 2 + sigma.b)
         }
       

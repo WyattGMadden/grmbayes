@@ -22,21 +22,49 @@
 #' @export
 
 grm_pred <- function(grm.fit,
-                    X.pred, 
-                    L.pred = NULL, 
-                    M.pred = NULL, 
-                    coords.Y, 
-                    space.id.Y,
-                    coords.pred, 
-                    space.id, 
-                    time.id, 
-                    spacetime.id, 
-                    incl.add.spat.eff = T,
-                    incl.mult.spat.eff = T,
-                    n.iter = 500,
-                    verbose = TRUE,
-                    in.sample = FALSE) {
+                     X.pred, 
+                     L.pred = NULL, 
+                     M.pred = NULL, 
+                     coords.Y, 
+                     space.id.Y,
+                     coords.pred, 
+                     space.id, 
+                     time.id, 
+                     spacetime.id, 
+                     incl.add.spat.eff = T,
+                     incl.mult.spat.eff = T,
+                     n.iter = 500,
+                     verbose = TRUE,
+                     in.sample = FALSE) {
 
+    ############################
+    ###standardize X, L and M###
+    ############################
+
+    standardize.param <- grm.fit$standardize.param
+
+    X.pred <- (X.pred - standardize.param[standardize.param$Type == "X", ]$Mean) / 
+        standardize.param[standardize.param$Type == "X", ]$SD
+
+    L.var <- as.character(standardize.param[standardize.param$Type == "L", ]$Name)
+
+    for (l in L.var) {
+        L.pred[, colnames(L.pred) == l] <- (L.pred[, colnames(L.pred) == l] - 
+                                           standardize.param[standardize.param$Name == l, ]$Mean) / 
+        standardize.param[standardize.param$Name == l, ]$SD
+    }
+
+    M.var <- as.character(standardize.param[standardize.param$Type == "M", ]$Name)
+
+    for (m in M.var) {
+        M.pred[, colnames(M.pred) == m] <- (M.pred[, colnames(M.pred) == m] - 
+                                           standardize.param[standardize.param$Name == m, ]$Mean) / 
+        standardize.param[standardize.param$Name == m, ]$SD
+    }
+
+
+    #not in sample calculates random effects with krigging
+    #in sample uses random effects from the model fit
     if (!in.sample) {
 
         ###Print some information
@@ -53,30 +81,6 @@ grm_pred <- function(grm.fit,
 
         cov_kern <- grm.fit$cov_kern
 
-        ############################
-        ###standardize X, L and M###
-        ############################
-        X.pred <- scale(X.pred)
-        if (!is.null(L.pred)) {
-            L.pred <- as.matrix(L.pred)
-            # scale unless variable is all one value 
-            #(can happen in cross validation with binary variables)
-            L.pred <- apply(X = L.pred, 
-                            MARGIN = 2, 
-                            FUN = function(x) ifelse(length(unique(x)) != 1,
-                                                     scale(x),
-                                                     x))
-        }
-        if (!is.null(M.pred)) {
-            M.pred <- as.matrix(M.pred)
-            # scale unless variable is all one value 
-            #(can happen in cross validation with binary variables)
-            M.pred <- apply(X = M.pred, 
-                            MARGIN = 2, 
-                            FUN = function(x) ifelse(length(unique(x)) <= 1,
-                                                    scale(x),
-                                                    x))
-        }
 
 
 
@@ -373,27 +377,6 @@ grm_pred <- function(grm.fit,
         alpha_space_pred <- grm.fit$alpha.space
         beta_space_pred <- grm.fit$beta.space
 
-        #standardize based on the model fit
-        standardize.param <- grm.fit$standardize.param
-    
-        X.pred <- (X.pred - standardize.param[standardize.param$Type == "X", ]$Mean) / 
-            standardize.param[standardize.param$Type == "X", ]$SD
-    
-        L.var <- as.character(standardize.param[standardize.param$Type == "L", ]$Name)
-
-        for (l in L.var) {
-            L.pred[, colnames(L.pred) == l] <- (L.pred[, colnames(L.pred) == l] - 
-                                               standardize.param[standardize.param$Name == l, ]$Mean) / 
-            standardize.param[standardize.param$Name == l, ]$SD
-        }
-    
-        M.var <- as.character(standardize.param[standardize.param$Type == "M", ]$Name)
-
-        for (m in M.var) {
-            M.pred[, colnames(M.pred) == m] <- (M.pred[, colnames(M.pred) == m] - 
-                                               standardize.param[standardize.param$Name == m, ]$Mean) / 
-            standardize.param[standardize.param$Name == m, ]$SD
-        }
 
 
     } else {
