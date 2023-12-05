@@ -46,6 +46,7 @@ grm_pred <- function(grm.fit,
     X.pred <- (X.pred - standardize.param[standardize.param$Type == "X", ]$Mean) / 
         standardize.param[standardize.param$Type == "X", ]$SD
 
+    L.pred <- as.matrix(L.pred)
     L.var <- as.character(standardize.param[standardize.param$Type == "L", ]$Name)
 
     for (l in L.var) {
@@ -54,6 +55,7 @@ grm_pred <- function(grm.fit,
         standardize.param[standardize.param$Name == l, ]$SD
     }
 
+    M.pred <- as.matrix(M.pred)
     M.var <- as.character(standardize.param[standardize.param$Type == "M", ]$Name)
 
     for (m in M.var) {
