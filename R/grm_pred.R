@@ -46,22 +46,29 @@ grm_pred <- function(grm.fit,
     X.pred <- (X.pred - standardize.param[standardize.param$Type == "X", ]$Mean) / 
         standardize.param[standardize.param$Type == "X", ]$SD
 
-    L.pred <- as.matrix(L.pred)
-    L.var <- as.character(standardize.param[standardize.param$Type == "L", ]$Name)
+    if (!is.null(L.pred)) {
 
-    for (l in L.var) {
-        L.pred[, colnames(L.pred) == l] <- (L.pred[, colnames(L.pred) == l] - 
-                                           standardize.param[standardize.param$Name == l, ]$Mean) / 
-        standardize.param[standardize.param$Name == l, ]$SD
+        L.pred <- as.matrix(L.pred)
+        L.var <- as.character(standardize.param[standardize.param$Type == "L", ]$Name)
+
+        for (l in L.var) {
+            L.pred[, colnames(L.pred) == l] <- (L.pred[, colnames(L.pred) == l] - 
+                                               standardize.param[standardize.param$Name == l, ]$Mean) / 
+            standardize.param[standardize.param$Name == l, ]$SD
+        }
     }
 
-    M.pred <- as.matrix(M.pred)
-    M.var <- as.character(standardize.param[standardize.param$Type == "M", ]$Name)
+    if (!is.null(L.pred)) {
 
-    for (m in M.var) {
-        M.pred[, colnames(M.pred) == m] <- (M.pred[, colnames(M.pred) == m] - 
-                                           standardize.param[standardize.param$Name == m, ]$Mean) / 
-        standardize.param[standardize.param$Name == m, ]$SD
+        M.pred <- as.matrix(M.pred)
+        M.var <- as.character(standardize.param[standardize.param$Type == "M", ]$Name)
+
+        for (m in M.var) {
+            M.pred[, colnames(M.pred) == m] <- (M.pred[, colnames(M.pred) == m] - 
+                                               standardize.param[standardize.param$Name == m, ]$Mean) / 
+            standardize.param[standardize.param$Name == m, ]$SD
+        }
+
     }
 
 
@@ -78,8 +85,14 @@ grm_pred <- function(grm.fit,
         N.time.obs <- length(unique(time.id)) #Number of observed time interval (weeks)
         N.spacetime <- max(spacetime.id) #Time points where spatial trends vary by (year)
         
-        N.Lmax <- ncol(L.pred) #Number of spatial predictors to use
-        N.Mmax <- ncol(M.pred) #Number of spatial-temporal predictors to use
+        N.Lmax <- 0
+        if (!is.null(L.pred)) {
+            N.Lmax <- ncol(L.pred) #Number of spatial predictors to use
+        }
+        N.Mmax <- 0
+        if (!is.null(M.pred)) {
+            N.Mmax <- ncol(M.pred) #Number of spatial-temporal predictors to use
+        }
 
         cov_kern <- grm.fit$cov_kern
 
