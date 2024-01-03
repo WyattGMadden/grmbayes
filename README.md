@@ -61,8 +61,8 @@ cmaq_fit_cv <- grm_cv(Y = cmaq_aqs_matched$pm25,
                                        "hwy_length", "lim_hwy_length", 
                                        "local_rd_length", "point_emi_any")],
                       M = cmaq_aqs_matched[, c("tmp", "wind")],
-                      n.iter = 100,
-                      burn = 20,
+                      n.iter = 1000,
+                      burn = 200,
                       thin = 4,
                       coords = cmaq_aqs_matched[, c("x", "y")],
                       nngp = T,
@@ -118,8 +118,8 @@ modis_fit_cv <- grm_cv(Y = modis_aqs_matched$pm25,
 
 ``` r
 ?cmaq_full
-
-cmaq_full <- grm_pred(grm.fit = cmaq_fit,
+cmaq_full
+cmaq_pred <- grm_pred(grm.fit = cmaq_fit,
                       X.pred = cmaq_full$ctm,
                       L.pred = cmaq_full[, c("elevation", "forestcover",
                                              "hwy_length", "lim_hwy_length", 
@@ -132,13 +132,14 @@ cmaq_full <- grm_pred(grm.fit = cmaq_fit,
                       time.id = cmaq_full$time_id,
                       spacetime.id = cmaq_full$spacetime_id,
                       n.iter = 20,
-                      verbose = T)
+                      verbose = T,
+                      include.random.effects = T)
 
 
 
 ?modis_full
 
-modis_full <- grm_pred(grm.fit = modis_fit,
+modis_pred <- grm_pred(grm.fit = modis_fit,
                        X.pred = modis_full$aod, 
                        L.pred = modis_full[, c("elevation", "forestcover",
                                                "hwy_length", "lim_hwy_length", 

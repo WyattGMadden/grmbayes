@@ -19,7 +19,8 @@ grm_pred(
   incl.mult.spat.eff = T,
   n.iter = 500,
   verbose = TRUE,
-  in.sample = FALSE
+  in.sample = FALSE,
+  include.random.effects = FALSE
 )
 }
 \arguments{
@@ -52,6 +53,8 @@ grm_pred(
 \item{verbose}{Print MCMC output}
 
 \item{in.sample}{False if predictions are being made at locations without observations in grm.fit (default is False)}
+
+\item{include.random.effects}{Include prediction temporal/spatial random effects for debugging purposes}
 }
 \value{
 A data frame containing grm predictions
