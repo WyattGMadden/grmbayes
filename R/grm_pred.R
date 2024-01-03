@@ -12,6 +12,7 @@
 #' @param coords.pred Matrix of prediction x, y coodinates (n_pred, 2)
 #' @param n.iter Number of iterations used in predictions. Must be <= than post-thined and burned iterations from grm.fit
 #' @param in.sample False if predictions are being made at locations without observations in grm.fit (default is False)
+#' @param include.random.effects Include prediction temporal/spatial random effects for debugging purposes
 #'
 #' @return A data frame containing grm predictions
 #'
@@ -35,7 +36,8 @@ grm_pred <- function(grm.fit,
                      incl.mult.spat.eff = T,
                      n.iter = 500,
                      verbose = TRUE,
-                     in.sample = FALSE) {
+                     in.sample = FALSE,
+                     include.random.effects = FALSE) {
 
     ############################
     ###standardize X, L and M###
@@ -440,6 +442,13 @@ grm_pred <- function(grm.fit,
     }
 
     results$sd <- sqrt((results$sd - results$estimate^2))
+
+    if (include.random.effects) {
+        results$alpha_space <- rowMeans(alpha_space_pred[match(id.temp, id.temp.pred), 2:(n.iter + 1)])
+        results$beta_space <- rowMeans(beta_space_pred[match(id.temp, id.temp.pred), 2:(n.iter + 1)])
+        results$alpha_time <- colMeans(grm.fit$alpha.time[time.id, 2:(n.iter + 1)])
+        results$beta_time <- colMeans(grm.fit$beta.time[time.id, 2:(n.iter + 1)])
+    }
 
 
     return(results)
