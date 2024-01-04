@@ -417,6 +417,7 @@ grm_pred <- function(grm.fit,
     
     
     for (m in 1:n.iter) {
+
         intercept <- grm.fit$others$alpha0[m] + 
             grm.fit$alpha.time[time.id, m + 1] + 
             alpha_space_pred[match(id.temp, id.temp.pred), m + 2]
@@ -446,8 +447,8 @@ grm_pred <- function(grm.fit,
     if (include.random.effects) {
         results$alpha_space <- rowMeans(alpha_space_pred[match(id.temp, id.temp.pred), 2:(n.iter + 1)])
         results$beta_space <- rowMeans(beta_space_pred[match(id.temp, id.temp.pred), 2:(n.iter + 1)])
-        results$alpha_time <- colMeans(grm.fit$alpha.time[time.id, 2:(n.iter + 1)])
-        results$beta_time <- colMeans(grm.fit$beta.time[time.id, 2:(n.iter + 1)])
+        results$alpha_time <- rowMeans(grm.fit$alpha.time[time.id, 2:(n.iter + 1)])
+        results$beta_time <- rowMeans(grm.fit$beta.time[time.id, 2:(n.iter + 1)])
     }
 
 
