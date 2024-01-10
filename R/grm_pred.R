@@ -413,17 +413,28 @@ grm_pred <- function(grm.fit,
 
     id.temp <- paste0(space.id, "_", spacetime.id)
     
+    id.temp.to.id.temp.pred <- match(id.temp, id.temp.pred)
 
-    
+   if (verbose) {
+       cat("####################################\n")
+       cat("#######Making Predictions###########\n")
+       cat("####################################\n")
+   }
     
     for (m in 1:n.iter) {
+        if (verbose) {
+            if (m %% (n.iter / 10) == 0) {
+                cat(paste("     Iteration", m, "of", n.iter), "\n")
+            }
+        }
+
 
         intercept <- grm.fit$others$alpha0[m] + 
             grm.fit$alpha.time[time.id, m + 1] + 
-            alpha_space_pred[match(id.temp, id.temp.pred), m + 2]
+            alpha_space_pred[id.temp.to.id.temp.pred, m + 2]
         slope <- grm.fit$others$beta0[m] + 
             grm.fit$beta.time[time.id, m + 1] + 
-            beta_space_pred[match(id.temp, id.temp.pred), m + 2]
+            beta_space_pred[id.temp.to.id.temp.pred, m + 2]
       
         pred.mu <- intercept + slope * X.pred
         if (!is.null(grm.fit$gamma)) {
@@ -444,11 +455,31 @@ grm_pred <- function(grm.fit,
 
     results$sd <- sqrt((results$sd - results$estimate^2))
 
+    if (verbose) {
+        cat("####################################\n")
+        cat("########Saving Random Effects#######\n")
+        cat("####################################\n")
+    }
+
     if (include.random.effects) {
-        results$alpha_space <- rowMeans(alpha_space_pred[match(id.temp, id.temp.pred), 2:(n.iter + 1)])
-        results$beta_space <- rowMeans(beta_space_pred[match(id.temp, id.temp.pred), 2:(n.iter + 1)])
+        if (verbose) cat("Selecting alpha space random effects\n")
+        which_alpha_space_pred <- alpha_space_pred[id.temp.to.id.temp.pred, 2:(n.iter + 1)]
+
+        if (verbose) cat("Row mean alpha space random effects\n")
+        results$alpha_space <- rowMeans(which_alpha_space_pred)
+
+        if (verbose) cat("Selecting beta space random effects\n")
+        which_beta_space_pred <- beta_space_pred[id.temp.to.id.temp.pred, 2:(n.iter + 1)]
+
+        if (verbose) cat("Row mean beta space random effects\n")
+        results$beta_space <- rowMeans(which_beta_space_pred)
+
+        if (verbose) cat("Row mean alpha time random effects\n")
         results$alpha_time <- rowMeans(grm.fit$alpha.time[time.id, 2:(n.iter + 1)])
+
+        if (verbose) cat("Row mean beta time random effects\n")
         results$beta_time <- rowMeans(grm.fit$beta.time[time.id, 2:(n.iter + 1)])
+
     }
 
 

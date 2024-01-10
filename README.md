@@ -118,7 +118,6 @@ modis_fit_cv <- grm_cv(Y = modis_aqs_matched$pm25,
 
 ``` r
 ?cmaq_full
-cmaq_full
 cmaq_pred <- grm_pred(grm.fit = cmaq_fit,
                       X.pred = cmaq_full$ctm,
                       L.pred = cmaq_full[, c("elevation", "forestcover",
