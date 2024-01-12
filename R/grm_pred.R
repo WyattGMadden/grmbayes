@@ -462,23 +462,17 @@ grm_pred <- function(grm.fit,
     }
 
     if (include.random.effects) {
-        if (verbose) cat("Selecting alpha space random effects\n")
-        which_alpha_space_pred <- alpha_space_pred[id.temp.to.id.temp.pred, 2:(n.iter + 1)]
+        if (verbose) cat("     Alpha space random effects saved\n")
+        results$alpha_space <- rowMeans(alpha_space_pred[, 2:(n.iter + 1)])[id.temp.to.id.temp.pred]
 
-        if (verbose) cat("Row mean alpha space random effects\n")
-        results$alpha_space <- rowMeans(which_alpha_space_pred)
+        if (verbose) cat("     Beta space random effects saved\n")
+        results$beta_space <- rowMeans(beta_space_pred[, 2:(n.iter + 1)])[id.temp.to.id.temp.pred]
 
-        if (verbose) cat("Selecting beta space random effects\n")
-        which_beta_space_pred <- beta_space_pred[id.temp.to.id.temp.pred, 2:(n.iter + 1)]
+        if (verbose) cat("     Alpha time random effects saved\n")
+        results$alpha_time <- rowMeans(grm.fit$alpha.time[, 2:(n.iter + 1)])[time.id]
 
-        if (verbose) cat("Row mean beta space random effects\n")
-        results$beta_space <- rowMeans(which_beta_space_pred)
-
-        if (verbose) cat("Row mean alpha time random effects\n")
-        results$alpha_time <- rowMeans(grm.fit$alpha.time[time.id, 2:(n.iter + 1)])
-
-        if (verbose) cat("Row mean beta time random effects\n")
-        results$beta_time <- rowMeans(grm.fit$beta.time[time.id, 2:(n.iter + 1)])
+        if (verbose) cat("     Beta time random effects saved\n")
+        results$beta_time <- rowMeans(grm.fit$beta.time[, 2:(n.iter + 1)])[time.id]
 
     }
 
