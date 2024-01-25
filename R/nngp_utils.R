@@ -117,7 +117,6 @@ dnngp <- function(y, ordered_coords, neighbors, dist_matrices, phi, r, cov_kern,
                                             log = log)
     for (i in 1:(nrow(ordered_coords) - 1)) {
         neighbor_i <- neighbors[[i]]
-        i_and_neighbors <- c(i, neighbor_i)
         dist_space_mat_i <- dist_matrices[[i]]
 
         joint_cov <- phi * cov_kern(distance = dist_space_mat_i, 
@@ -144,7 +143,6 @@ dnngp_discrete_theta <- function(y, ordered_coords, neighbors, dist_matrices, ph
                                             log = log)
     for (i in 1:(nrow(ordered_coords) - 1)) {
         neighbor_i <- neighbors[[i]]
-        i_and_neighbors <- c(i, neighbor_i)
         dist_space_mat_i <- dist_matrices[[i]]
 
         joint_cov <- phi * kerns[[i]]
