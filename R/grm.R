@@ -698,7 +698,7 @@ grm <- function(Y,
                                      tau.alpha.b, 
                                      log = T) + 
                         #log-normal
-                        stats::dlnorm(theta_alpha_prop, 
+                        stats::dgamma(theta_alpha_prop, 
                                       theta.alpha.a, 
                                       theta.alpha.b, 
                                       log = T) + 
@@ -710,7 +710,7 @@ grm <- function(Y,
                                       tau.alpha.b, 
                                       log = T) - 
                         #log-normal
-                        stats::dlnorm(theta_alpha, 
+                        stats::gamma(theta_alpha, 
                                       theta.alpha.a, 
                                       theta.alpha.b, 
                                       log = T) - 
@@ -995,13 +995,13 @@ grm <- function(Y,
                     }
               
                     ratio <- lik.prop + 
-                        stats::dlnorm(theta.prop, 
+                        stats::dgamma(theta.prop, 
                                       theta.alpha.a, 
                                       theta.alpha.b, 
                                       log = T) + 
                             log(theta.prop) -
                             lik.curr - 
-                            stats::dlnorm(theta_alpha, 
+                            stats::dgamma(theta_alpha, 
                                           theta.alpha.a, 
                                           theta.alpha.b, 
                                           log = T) - 
@@ -1261,7 +1261,7 @@ grm <- function(Y,
                                       tau.beta.b, 
                                       log = T) + 
                         #log-normal
-                        stats::dlnorm(theta_beta_prop, 
+                        stats::dgamma(theta_beta_prop, 
                                       theta.beta.a, 
                                       theta.beta.b, 
                                       log = T) + 
@@ -1273,7 +1273,7 @@ grm <- function(Y,
                                       tau.beta.b, 
                                       log = T) - 
                         #log-normal
-                        stats::dlnorm(theta_beta, 
+                        stats::dgamma(theta_beta, 
                                       theta.beta.a, 
                                       theta.beta.b, 
                                       log = T) - 
@@ -1554,13 +1554,13 @@ grm <- function(Y,
                     }
               
                     ratio <- lik.prop + 
-                        stats::dlnorm(theta.prop,  
+                        stats::dgamma(theta.prop,  
                                       theta.beta.a, 
                                       theta.beta.b, 
                                       log = T) + 
                         log(theta.prop) -
                         lik.curr - 
-                        stats::dlnorm(theta_beta, 
+                        stats::dgamma(theta_beta, 
                                       theta.beta.a, 
                                       theta.beta.b, 
                                       log = T) - 
