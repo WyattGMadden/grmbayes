@@ -264,6 +264,7 @@ grm_pred <- function(grm.fit,
             neighbors_pred <- get_neighbors_ref(ordered_coords = nngp_info$ordered.coords, 
                                                 locations.pred, 
                                                 nngp_info$num_neighbors)
+
             dist_mats_pred <- get_dist_matrices_ref(ordered_coords = nngp_info$ordered.coords, 
                                                     coords_pred = locations.pred,
                                                     neighbors = neighbors_pred)
@@ -299,7 +300,7 @@ grm_pred <- function(grm.fit,
 
                         alpha.m.j <- alpha.m[alpha.spacetime.id == j]
                         alpha.m.j.ord <- alpha.m.j[nngp_info$coord.ordering]
-                        alpha.j.space.id.pred <- unique(alpha_space_pred$space.id[alpha_space_pred$spacetime.id == j])
+                        alpha.j.space.id.pred <- alpha_space_pred$space.id[alpha_space_pred$spacetime.id == j]
                         alpha.m.j.pred <- rep(0, length(alpha.j.space.id.pred))
 
                         for (i in 1:length(alpha.j.space.id.pred)) {
@@ -413,6 +414,7 @@ grm_pred <- function(grm.fit,
 
     id.temp <- paste0(space.id, "_", spacetime.id)
     
+
     id.temp.to.id.temp.pred <- match(id.temp, id.temp.pred)
 
    if (verbose) {

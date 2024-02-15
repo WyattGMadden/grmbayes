@@ -22,6 +22,7 @@ order_coords <- function(coords, space_id) {
     return(coord_list)
 }
 
+#get neighbors for each location
 get_neighbors <- function(ordered_coords, m) {
     neighbors <- list()
     for (j in 1:(nrow(ordered_coords) - 1)) {
@@ -35,6 +36,15 @@ get_neighbors <- function(ordered_coords, m) {
     }
     neighbors[[nrow(ordered_coords)]] <- numeric(0)
     return(neighbors)
+}
+
+#get locations for which each location is a neighbor
+get_neighbors_inverse <- function(neighbors) {
+    neighbors_inverse <- list(length(neighbors))
+    for (i in 1:length(neighbors)) {
+        neighbors_inverse[[i]] <- which(sapply(neighbors, function(x) i %in% x))
+    }
+    return(neighbors_inverse)
 }
 
 #get neighbors from a reference set of ordered coordinates
@@ -108,14 +118,14 @@ rnngp <- function(ordered_coords, neighbors, phi, r, cov_kern) {
 
 
 
-dnngp <- function(y, ordered_coords, neighbors, dist_matrices, phi, r, cov_kern, log = FALSE) {
-    d <- rep(0, nrow(ordered_coords))
-    d[nrow(ordered_coords)] <- stats::dnorm(y[nrow(ordered_coords)], 
+dnngp <- function(y, neighbors, dist_matrices, phi, r, cov_kern, log = FALSE) {
+    d <- rep(0, length(y))
+    d[length(y)] <- stats::dnorm(y[length(y)], 
                                             0, 
                                             sqrt(phi * cov_kern(distance = 0,
                                                                 theta = r)), 
                                             log = log)
-    for (i in 1:(nrow(ordered_coords) - 1)) {
+    for (i in 1:(length(y) - 1)) {
         neighbor_i <- neighbors[[i]]
         dist_space_mat_i <- dist_matrices[[i]]
 
@@ -135,13 +145,13 @@ dnngp <- function(y, ordered_coords, neighbors, dist_matrices, phi, r, cov_kern,
     return(d)
 }
 
-dnngp_discrete_theta <- function(y, ordered_coords, neighbors, dist_matrices, phi, which_theta, kerns, kerns_partial_inv, log = FALSE) {
-    d <- rep(0, nrow(ordered_coords))
-    d[nrow(ordered_coords)] <- stats::dnorm(y[nrow(ordered_coords)], 
+dnngp_discrete_theta <- function(y, neighbors, dist_matrices, phi, which_theta, kerns, kerns_partial_inv, log = FALSE) {
+    d <- rep(0, length(y))
+    d[length(y)] <- stats::dnorm(y[length(y)], 
                                             0, 
                                             sqrt(phi * kerns[[length(kerns)]]),
                                             log = log)
-    for (i in 1:(nrow(ordered_coords) - 1)) {
+    for (i in 1:(length(y) - 1)) {
         neighbor_i <- neighbors[[i]]
         dist_space_mat_i <- dist_matrices[[i]]
 
