@@ -710,7 +710,7 @@ grm <- function(Y,
                                       tau.alpha.b, 
                                       log = T) - 
                         #log-normal
-                        stats::gamma(theta_alpha, 
+                        stats::dgamma(theta_alpha, 
                                       theta.alpha.a, 
                                       theta.alpha.b, 
                                       log = T) - 
@@ -807,7 +807,6 @@ grm <- function(Y,
                         alpha_space_st <- alpha_space_st[nngp_utils$coord_ordering]
                          lik_prop <- lik_prop +
                              sum(dnngp_discrete_theta(y = alpha_space_st,
-                                                      ordered_coords = nngp_utils$ordered_coords,
                                                       neighbors = neighbors,
                                                       dist_matrices = dist_matrices,
                                                       phi = tau_prop,
@@ -817,7 +816,6 @@ grm <- function(Y,
 
                         lik_cur <- lik_cur +
                             sum(dnngp_discrete_theta(y = alpha_space_st,
-                                                     ordered_coords = nngp_utils$ordered_coords,
                                                      neighbors = neighbors,
                                                      dist_matrices = dist_matrices,
                                                      phi = tau_alpha,
