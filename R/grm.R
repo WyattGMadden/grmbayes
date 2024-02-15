@@ -1171,7 +1171,7 @@ grm <- function(Y,
 
 
                         for (s in 1:length(beta_space_st_ord)) {
-                            SSS_s <- tau_beta * cov_kern(distance = dist_matrices[[j]], 
+                            SSS_s <- tau_beta * cov_kern(distance = dist_matrices[[s]], 
                                                           theta = theta_beta)
                             B_s <- 0
                             F_s <- SSS_s[1, 1]
