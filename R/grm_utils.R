@@ -13,3 +13,12 @@ covariate_matrix_standardize <- function(x) {
                           "/") 
   return(list(x = x, x.mean = x.mean, x.sd = x.sd))
 }
+
+#density of inverse gamma
+dinvgamma <- function(x, alpha, beta, log = F) {
+    if (log) {
+        return(stats::dgamma(x, alpha, beta, log = T) - 2 * log(x))
+    } else {
+        return(stats::dgamma(x, alpha, beta) * (1 / x)^2)
+    }
+}
