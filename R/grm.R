@@ -101,6 +101,21 @@ grm <- function(Y,
                sigma.b = 0.001,
                verbose = TRUE,
                verbose.iter = 1000) {
+
+    ###############################
+    ### Input Parameter Checks ####
+    ###############################
+
+    #Check that all space.ids occur in all spacetimes
+    if (length(unique(space.id)) * length(unique(spacetime.id)) > 
+        length(unique(paste(space.id, spacetime.id, sep = "-")))) {
+
+        stop(paste0("All space id's must occur at ",
+                    "least once within each spacetime id."))
+
+    }
+
+
  
 
     ###############################
