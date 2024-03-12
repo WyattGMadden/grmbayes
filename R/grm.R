@@ -49,6 +49,7 @@
 #' @param rho.beta.init Initial value for rho beta
 #' @param sigma.a First sigma prior hyperparameter
 #' @param sigma.b Second sigma prior hyperparameter
+#' @param sigma.fix.iter.num Fix sigma for first sigma.fix.iter.num iterations
 #' @param verbose Print MCMC output
 #' @param verbose.iter print MCMC output step number each 'verbose.iter' iterations
 #'
@@ -105,6 +106,7 @@ grm <- function(Y,
                rho.beta.init = 0.9999,
                sigma.a = 0.001, 
                sigma.b = 0.001,
+               sigma.fix.iter.num = 0,
                verbose = TRUE,
                verbose.iter = 1000) {
 
@@ -611,8 +613,10 @@ grm <- function(Y,
         }
       
         #Update residual error sigma2
-        RRR <- Y - MMM
-        sigma2 <- 1 / stats::rgamma(1, length(RRR) / 2 + sigma.a, sum(RRR ^ 2) / 2 + sigma.b)
+        if (i > sigma.fix.iter.num) {
+            RRR <- Y - MMM
+            sigma2 <- 1 / stats::rgamma(1, length(RRR) / 2 + sigma.a, sum(RRR ^ 2) / 2 + sigma.b)
+        }
        
 
         #Update spatial intercepts and parameters if NNGP

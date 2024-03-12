@@ -51,6 +51,7 @@ grm(
   rho.beta.init = 0.9999,
   sigma.a = 0.001,
   sigma.b = 0.001,
+  sigma.fix.iter.num = 0,
   verbose = TRUE,
   verbose.iter = 1000
 )
@@ -147,6 +148,8 @@ grm(
 \item{sigma.a}{First sigma prior hyperparameter}
 
 \item{sigma.b}{Second sigma prior hyperparameter}
+
+\item{sigma.fix.iter.num}{Fix sigma for first sigma.fix.iter.num iterations}
 
 \item{verbose}{Print MCMC output}
 
