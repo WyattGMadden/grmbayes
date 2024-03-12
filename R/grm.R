@@ -42,6 +42,9 @@
 #' @param theta.beta.a First theta beta prior hyperparameter
 #' @param theta.beta.b Second theta beta prior hyperparameter
 #' @param theta.beta.init Initial value for theta beta
+#' @param post.burn.init Iteration at which second initialization occurs
+#' @param theta.alpha.init.post.burn Second theta alpha initialization value
+#' @param theta.beta.init.post.burn Second theta alpha initialization value
 #' @param rho.alpha.init Initial value for rho alpha
 #' @param rho.beta.init Initial value for rho beta
 #' @param sigma.a First sigma prior hyperparameter
@@ -88,13 +91,16 @@ grm <- function(Y,
                omega.a = 0.5,
                omega.b = 0.005,
                theta.alpha.tune = 0.2, 
-               theta.alpha.a = 5, 
-               theta.alpha.b = 0.05,
+               theta.alpha.a = 0.001, 
+               theta.alpha.b = 0.001,
                theta.alpha.init = 100,
                theta.beta.tune = 0.2, 
-               theta.beta.a = 5, 
-               theta.beta.b = 0.05,
+               theta.beta.a = 0.001, 
+               theta.beta.b = 0.001,
                theta.beta.init = 100,
+               post.burn.init = NULL,
+               theta.alpha.init.post.burn = 100,
+               theta.beta.init.post.burn = 100,
                rho.alpha.init = 0.9999,
                rho.beta.init = 0.9999,
                sigma.a = 0.001, 
@@ -551,6 +557,16 @@ grm <- function(Y,
         if (verbose == TRUE) {
             if ((i %% verbose.iter) == 0) print(paste("     Iteration", i, "of", n.iter))
         }
+
+
+        ###Post-burn intialize parameters
+        if (!is.null(post.burn.init)) {
+            if (i == post.burn.init) {
+                theta.alpha <- theta.alpha.init.post.burn
+                theta.beta <- theta.beta.init.post.burn
+            }
+        }
+
     
         ###Update alpha0 and beta0
         MMM <-  MMM - alpha0 - beta0 * X 

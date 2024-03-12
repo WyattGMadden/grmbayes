@@ -37,13 +37,16 @@ grm(
   omega.a = 0.5,
   omega.b = 0.005,
   theta.alpha.tune = 0.2,
-  theta.alpha.a = 5,
-  theta.alpha.b = 0.05,
+  theta.alpha.a = 0.001,
+  theta.alpha.b = 0.001,
   theta.alpha.init = 100,
   theta.beta.tune = 0.2,
-  theta.beta.a = 5,
-  theta.beta.b = 0.05,
+  theta.beta.a = 0.001,
+  theta.beta.b = 0.001,
   theta.beta.init = 100,
+  post.burn.init = NULL,
+  theta.alpha.init.post.burn = 100,
+  theta.beta.init.post.burn = 100,
   rho.alpha.init = 0.9999,
   rho.beta.init = 0.9999,
   sigma.a = 0.001,
@@ -130,6 +133,12 @@ grm(
 \item{theta.beta.b}{Second theta beta prior hyperparameter}
 
 \item{theta.beta.init}{Initial value for theta beta}
+
+\item{post.burn.init}{Iteration at which second initialization occurs}
+
+\item{theta.alpha.init.post.burn}{Second theta alpha initialization value}
+
+\item{theta.beta.init.post.burn}{Second theta alpha initialization value}
 
 \item{rho.alpha.init}{Initial value for rho alpha}
 
