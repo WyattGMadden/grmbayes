@@ -45,10 +45,14 @@ grm_cv(
   theta.beta.a = 5,
   theta.beta.b = 0.05,
   theta.beta.init = 100,
+  post.burn.init = NULL,
+  theta.alpha.init.post.burn = 100,
+  theta.beta.init.post.burn = 100,
   rho.alpha.init = 0.9999,
   rho.beta.init = 0.9999,
   sigma.a = 0.001,
   sigma.b = 0.001,
+  sigma.fix.iter.num = 0,
   verbose = TRUE,
   verbose.iter = 1000
 )
@@ -134,6 +138,12 @@ grm_cv(
 
 \item{theta.beta.init}{Initial value for theta beta}
 
+\item{post.burn.init}{Iteration at which second initialization occurs}
+
+\item{theta.alpha.init.post.burn}{Second theta alpha initialization value}
+
+\item{theta.beta.init.post.burn}{Second theta alpha initialization value}
+
 \item{rho.alpha.init}{Initial value for rho alpha}
 
 \item{rho.beta.init}{Initial value for rho beta}
@@ -141,6 +151,8 @@ grm_cv(
 \item{sigma.a}{First sigma prior hyperparameter}
 
 \item{sigma.b}{Second sigma prior hyperparameter}
+
+\item{sigma.fix.iter.num}{Fix sigma for first sigma.fix.iter.num iterations}
 
 \item{verbose}{Print MCMC output}
 
