@@ -564,8 +564,8 @@ grm <- function(Y,
         ###Post-burn intialize parameters
         if (!is.null(post.burn.init)) {
             if (i == post.burn.init) {
-                theta.alpha <- theta.alpha.init.post.burn
-                theta.beta <- theta.beta.init.post.burn
+                theta_alpha <- theta.alpha.init.post.burn
+                theta_beta <- theta.beta.init.post.burn
             }
         }
 
