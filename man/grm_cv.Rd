@@ -54,7 +54,8 @@ grm_cv(
   sigma.b = 0.001,
   sigma.fix.iter.num = 0,
   verbose = TRUE,
-  verbose.iter = 1000
+  verbose.iter = 1000,
+  just.fit.i = NULL
 )
 }
 \arguments{
@@ -157,6 +158,8 @@ grm_cv(
 \item{verbose}{Print MCMC output}
 
 \item{verbose.iter}{print MCMC output step number each 'verbose.iter' iterations}
+
+\item{just.fit.i}{Fold number integer to just fit this CV fold.}
 }
 \value{
 A data frame containing cross validation predictions

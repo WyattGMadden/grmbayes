@@ -5,6 +5,7 @@
 #' @inheritParams grm_pred
 #' @inheritParams grm
 #' @param cv.object A named list containing cv.id, num.folds, and type. Can be created with create_cv function. 
+#' @param just.fit.i Fold number integer to just fit this CV fold. 
 #'
 #' @return A data frame containing cross validation predictions
 #'
@@ -62,7 +63,8 @@ grm_cv <- function(Y,
                   sigma.b = 0.001,
                   sigma.fix.iter.num = 0,
                   verbose = TRUE,
-                  verbose.iter = 1000) {
+                  verbose.iter = 1000, 
+                  just.fit.i = NULL) {
 
     cv.id <- cv.object$cv.id
 
@@ -74,6 +76,9 @@ grm_cv <- function(Y,
   
   
     for (cv.i in 1:cv.object$num.folds) {
+        
+        #fit.i override
+        if (!is.null(fit.i)) cv.i <- fit.i
     
         print(paste0("Performing CV Experiment ---- Fold ", cv.i))
 
@@ -218,6 +223,8 @@ grm_cv <- function(Y,
 
         Y.cv$estimate[test.id] <- cv.results$estimate
         Y.cv$sd[test.id] <- cv.results$sd
+
+        if (!is.null(just.fit.i)) break
 
     }
  
