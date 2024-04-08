@@ -77,8 +77,8 @@ grm_cv <- function(Y,
   
     for (cv.i in 1:cv.object$num.folds) {
         
-        #fit.i override
-        if (!is.null(fit.i)) cv.i <- fit.i
+        #just.fit.i override
+        if (!is.null(just.fit.i)) cv.i <- just.fit.i
     
         print(paste0("Performing CV Experiment ---- Fold ", cv.i))
 
