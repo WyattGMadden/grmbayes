@@ -1445,7 +1445,7 @@ grm <- function(Y,
                         theta_beta_prop <- discrete.theta.beta.values[[which_theta_prop_beta]]
 
                         kern_prop <- dnngpkernsbeta$kernals_beta[[which_theta_prop_beta]]
-                        kern_inv_prop <- dnngpkernsalpha$kernals_inv_alpha[[which_theta_prop_beta]]
+                        kern_inv_prop <- dnngpkernsbeta$kernals_inv_alpha[[which_theta_prop_beta]]
                         kern_partial_inv_prop <- dnngpkernsbeta$kernals_partial_inv_beta[[which_theta_prop_beta]]
 
                         lik_prop <- 0
