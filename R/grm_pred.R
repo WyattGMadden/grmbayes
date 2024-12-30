@@ -60,7 +60,7 @@ grm_pred <- function(grm.fit,
         }
     }
 
-    if (!is.null(L.pred)) {
+    if (!is.null(M.pred)) {
 
         M.pred <- as.matrix(M.pred)
         M.var <- as.character(standardize.param[standardize.param$Type == "M", ]$Name)
